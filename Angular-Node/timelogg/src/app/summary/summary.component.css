@@ -1,0 +1,17 @@
+table.summary {
+    width: 80%;
+    margin-left: 20px;
+    border: 1px solid #999;
+}
+.startsum , .endsum, .durationsum {
+    text-align: center;
+    width: 15%;
+    padding: 2px 0 2px 0;
+}
+.tasksum , .trailer {
+    padding-left: 6px;
+}
+.trailer {
+    font-weight: bold;
+}
+

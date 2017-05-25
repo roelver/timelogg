@@ -1,0 +1,9 @@
+<td class="line">
+	<tl-timelinebar
+	   *ngFor="let log of myDlog?.logs; let i = index"
+		[idx]="i"
+		[miDlog]="myDlog"
+		[miDlogIdx]="idx"
+		[myTlog]="log"
+	   title="{{showDetails(i)}}"></tl-timelinebar>
+</td>

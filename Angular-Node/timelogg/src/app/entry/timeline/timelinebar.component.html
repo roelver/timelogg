@@ -1,0 +1,20 @@
+	<div class="bar"
+		  [style.left]="getLeft()"
+	     [style.width]="getWidth()"
+	     mwlResizable
+	     [resizeEdges]="{bottom: false, right: true, top: false, left: true}"
+	     [enableGhostResize]="true"
+	     (resizeStart)="onResizeStart($event)"
+	     (resizeEnd)="onResizeEnd($event)"
+		  [contextMenu]="optionMenu"
+		  [contextMenuSubject]="myTlog"
+	     >
+	</div>
+<context-menu #optionMenu>
+  <ng-template contextMenuItem (execute)="onDelete($event)">
+    Delete
+  </ng-template>
+  <ng-template contextMenuItem>
+    Comment: <input type="text" [(ngModel)]="myTlog.comment">
+  </ng-template>
+</context-menu>

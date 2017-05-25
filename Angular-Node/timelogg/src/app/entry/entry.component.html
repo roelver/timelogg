@@ -1,0 +1,70 @@
+<div class="entrypage">
+  <br/>
+  <div class="row">
+    <div class="col-md-10">
+      <div id="manual">
+          <form id="entryform" (ngSubmit)="onSubmit(f)" #f="ngForm">
+            <label for="select-task">Task</label>
+            <select class="form-control" required ngModel name="taskId" id="select-task" name="taskId">
+              <option *ngFor="let task of tasklist" [value]="task.taskId">
+                {{task.description}}
+              </option>
+            </select>
+
+            <label for="fromHH">From</label>
+            <select id="fromHH" ngModel name="fromHH" required>
+              <option *ngFor="let i of hours" [value]="i">{{i}}</option>
+            </select>
+            <span>:</span>
+            <select id="fromMM" ngModel name="fromMM" required>
+              <option *ngFor="let i of mins" [value]="i">{{i}}</option>
+            </select>
+            <label for="toHH">&nbsp;&nbsp;Until</label>
+            <select id="toHH" ngModel name="toHH" required>
+              <option *ngFor="let i of hours" [value]="i">{{i}}</option>
+            </select>
+            <span>:</span>
+            <select id="toMM" ngModel name="toMM" required>
+              <option *ngFor="let i of mins" [value]="i">{{i}}</option>
+            </select>
+            <input type="text" ngModel name="comment" placeholder="Comment" size="20"/>
+            <input type="submit" class="btn btn-default" [disabled]="!f.valid" value="Save"/>
+          </form>
+       </div> <!-- #manual -->
+    </div> <!-- .col-md9 -->
+    <div class="col-md-2">
+      <p class="input-group">
+          <input type="date" [value]="dt" (change)="onDateChange($event.target.value)"/>
+      </p>
+    </div> <!-- .col-md3 -->
+  </div> <!-- .row -->
+<br/>
+<div class="entries">
+  <tl-timeline-area [userid]="userEmail" [currentDate]="currentDate" [tasklist]="tasklist" [dlogs]="dlogList" (taskListChanged)="0"></tl-timeline-area>
+
+  <p class="controls">
+    <span class="control" (click)="onNewTask()"><img src="assets/images/add.png" alt="Add a new task"/></span>
+    <span class="control" *ngIf="allShowing" (click)="showAll()"><img src="assets/images/all_tasks.png" alt="Show all tasks"/></span>
+    <span class="control" *ngIf="!allShowing" (click)="showActive()"><img src="assets/images/active_tasks.png" alt="Show active tasks only"/></span>
+    <button ng-click="redrawAll(true)">Refresh</button>
+  </p>
+
+</div> <!-- .entries -->
+
+</div> <!-- .entrypage -->
+
+<!-- LOG CONTENTS -->
+<table class="tmp col-md-12" *ngIf="dlogList != null && dlogList.length > 0">
+  <tr *ngFor="let dlog of dlogList">
+    <td>{{dlog.logDate}}</td>
+    <td>{{dlog.taskId}}</td>
+    <td>{{dlog.userId}}</td>
+    <td>{{dlog.description}}</td>
+    <td>{{dlog.isRunning}}</td>
+    <td>
+      <ul *ngFor="let tlog of dlog.logs">
+        <li>{{getStartStr(tlog)}} - {{getEndStr(tlog)}} ({{getDurationStr(tlog)}}): {{tlog.comment}}</li>
+      </ul>
+    </td>
+  </tr>
+</table>

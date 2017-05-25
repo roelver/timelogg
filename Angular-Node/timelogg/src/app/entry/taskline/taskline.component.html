@@ -1,0 +1,19 @@
+		  <td class="startstop">
+          <span class="control" (click)="startRunning()" [hidden]="hideStartButton() || !isToday()">
+            <img src="assets/images/record.png" alt="Start recording this task"/>
+          </span>
+	        <span class="control" (click)="stopRunning()" [hidden]="!hideStartButton() || !isToday()">
+	          <img src="assets/images/pause.png" alt="Stop recording this task"/>
+	        </span>
+	      </td>
+			<td class="taskmenu">
+				<button class="btn btn-default menu" (click)="toggleForm()">
+  	  		      <i class="glyphicon glyphicon-option-vertical"></i>
+  	  		   </button>
+  	  		   <div class="taskform" tl-taskform
+  	  		          [myTask]="myTask"
+  	  		          [hidden]="!isFormVisible"
+  	  		          (hideForm)="hideForm($event)"
+  	  		          (saveTask)="saveTask($event)"></div>
+			</td>
+			<td class="taskdesc">{{myTask.description}}</td>

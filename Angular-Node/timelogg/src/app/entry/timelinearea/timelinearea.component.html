@@ -1,0 +1,25 @@
+	<table id="marginbox" cellspacing="0">
+		<tr class="header">
+			<td colspan="3" class="tlbody"></td>
+		</tr>
+		<tr class="tlbody" *ngFor="let task of tasklist; let i = index">
+			<tl-taskline [myTask]="task" [idx]="i" [currentDate]="currentDate" [userEmail]="userid"></tl-taskline>
+		</tr>
+		<tr class="footer">
+			<td colspan="3" class="tlbody"></td>
+		</tr>
+	</table>
+
+<div id="scrollview">
+	<table id="scrollbox" cellspacing="0">
+		<tr class="header">
+			<td class="tlscale"><img  src="assets/images/bgscale.png" alt="Time scale" /></td>
+		</tr>
+		<tr *ngFor="let task of tasklist; let i = index">
+			<tl-timeline [myTask]="task" [idx]="i" [currentDate]="currentDate"></tl-timeline>
+		</tr>
+		<tr class="header">
+			<td class="tlscale"><img  src="assets/images/bgscale.png" alt="Time scale" /></td>
+		</tr>
+	</table>
+</div>
