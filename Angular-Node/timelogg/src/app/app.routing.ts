@@ -11,7 +11,7 @@ import { AboutComponent } from './about/about.component';
 declare var System: any;
 
 export const AppRoutes: Routes = [
-   { path: '', redirectTo: '/signup', pathMatch: 'full' },
+   { path: '', redirectTo: '/signin', pathMatch: 'full' },
    { path: 'signup', component: SignupComponent },
    { path: 'signin', component: SigninComponent },
    { path: 'entry', component: EntryComponent, canActivate: [AuthGuard] },

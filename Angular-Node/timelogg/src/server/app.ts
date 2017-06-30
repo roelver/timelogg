@@ -2,6 +2,7 @@ import * as express from 'express';
 import * as http from 'http';
 import * as serveStatic from 'serve-static';
 import * as path from 'path';
+import * as morgan from 'morgan';
 import * as mongoose from 'mongoose';
 import * as bodyParser from 'body-parser';
 
@@ -55,6 +56,8 @@ class Server {
 
         // parse application/json
         this.app.use(bodyParser.json());
+
+        this.app.use(morgan('dev'));
     }
 
     private routes(): void {

@@ -1,8 +1,9 @@
-import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import {Component, OnInit, Input, ViewChild, OnDestroy} from '@angular/core';
 import { IDaylog, ITimelog } from '../../../models';
 import { TimelogService } from '../../shared/services/timelog.service';
 import { ResizeEvent } from 'angular-resizable-element';
 import { ContextMenuComponent } from 'ngx-contextmenu';
+import {Subscription} from 'rxjs/Subscription';
 
 const styles: string = require('./timelinebar.component.css').toString();
 
@@ -11,13 +12,10 @@ const styles: string = require('./timelinebar.component.css').toString();
   templateUrl: 'timelinebar.component.html',
   styles: [styles]
 })
-export class TimelinebarComponent implements OnInit {
+export class TimelinebarComponent implements OnInit, OnDestroy {
 
    @Input()
       idx: number;
-
-  @Input()
-    miDlog: IDaylog;
 
   @Input()
     myTlog: ITimelog;
@@ -25,30 +23,39 @@ export class TimelinebarComponent implements OnInit {
   @Input()
     miDlogIdx: number;
 
+  @Input()
+      updateFlag: boolean;
+
     mouseOver: number = -1;
     isResizable: boolean = false;
     isResizing:  boolean = false;
+    updateSubscription: Subscription;
 
-
+    left: string;
+    width: string;
+    details: string;
 
   @ViewChild('optionMenu') public optionMenu: ContextMenuComponent;
 
   constructor(private tlogService: TimelogService) { }
 
   ngOnInit(): void {
+      this.updateProperties();
+      this.updateSubscription = this.tlogService.updateTimelines.subscribe(() => this.updateProperties());
   }
 
-  getLeft(): string {
-    return '' + this.tlogService.getBarLeftPosition(this.myTlog) + 'px';
+  ngOnDestroy(): void {
+      if (this.updateSubscription) {
+          this.updateSubscription.unsubscribe();
+      }
+  }
+  updateProperties(): void {
+    this.left = '' + this.tlogService.getBarLeftPosition(this.myTlog) + 'px';
+    this.width = '' + this.tlogService.getBarWidth(this.myTlog) + 'px';
+    this.details = this.tlogService.getDetails(this.myTlog);
+    console.log('tlbar updateProps', this.idx, this.myTlog, this.left, this.width, this.details);
   }
 
-  getWidth(): string {
-    return '' + this.tlogService.getBarWidth(this.myTlog) + 'px';
-  }
-
-  showDetails(): string {
-    return this.tlogService.getDetails(this.myTlog);
-  }
 
   onDelete(event: any): void {
      console.log('Delete: ', event, this.myTlog);
@@ -63,10 +70,16 @@ export class TimelinebarComponent implements OnInit {
     console.log('ResizeEnd', event);
     this.isResizing = false;
     this.myTlog = this.tlogService.onResize(event.edges, this.myTlog);
-    this.tlogService.updateTimelog(this.myTlog, this.miDlog, this.idx);
+    console.log('After resize', this.myTlog);
+    this.tlogService.updateTimelog(this.myTlog, this.miDlogIdx, this.idx);
   }
 
   onValidateResize(): boolean {
     return true;
   }
+
+  markDirty(): void {
+      this.tlogService.markDirty(this.miDlogIdx);
+  }
+
 }

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { AuthService } from '../../../auth/auth.service';
+import {IUser} from '../../../../models/user';
 
 const styles: string = require('./header.component.css').toString();
 
@@ -13,14 +14,14 @@ const styles: string = require('./header.component.css').toString();
 
 export class HeaderComponent implements OnInit {
 
-    userEmail: string;
+    user: IUser;
 
     constructor(private authService: AuthService, private router: Router) {}
 
     ngOnInit(): void {
       this.authService.userChanged.subscribe(
         (data) => {console.log('Header user change', data);
-                   this.userEmail = data;
+                   this.user = data;
                  });
     }
 
@@ -30,7 +31,7 @@ export class HeaderComponent implements OnInit {
 
     logOut(): void {
         this.authService.logout();
-        this.userEmail = null;
+        this.user = null;
         this.router.navigate(['/signin']);
     }
 }

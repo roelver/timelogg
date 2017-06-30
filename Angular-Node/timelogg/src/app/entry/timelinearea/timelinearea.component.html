@@ -2,8 +2,8 @@
 		<tr class="header">
 			<td colspan="3" class="tlbody"></td>
 		</tr>
-		<tr class="tlbody" *ngFor="let task of tasklist; let i = index">
-			<tl-taskline [myTask]="task" [idx]="i" [currentDate]="currentDate" [userEmail]="userid"></tl-taskline>
+		<tr class="tlbody" *ngFor="let dlog of allDaylogs; let i = index">
+			<tl-taskline [myTask]="dlog.description" [idx]="i" [currentDate]="currentDate" [userEmail]="userid" [isRunning]="dlog.isRunning"></tl-taskline>
 		</tr>
 		<tr class="footer">
 			<td colspan="3" class="tlbody"></td>
@@ -15,11 +15,36 @@
 		<tr class="header">
 			<td class="tlscale"><img  src="assets/images/bgscale.png" alt="Time scale" /></td>
 		</tr>
-		<tr *ngFor="let task of tasklist; let i = index">
-			<tl-timeline [myTask]="task" [idx]="i" [currentDate]="currentDate"></tl-timeline>
+		<tr *ngFor="let dlog of allDaylogs; let i = index">
+			<tl-timeline [idx]="i" [currentDate]="currentDate" [myDaylog]="dlog"></tl-timeline>
 		</tr>
 		<tr class="header">
 			<td class="tlscale"><img  src="assets/images/bgscale.png" alt="Time scale" /></td>
 		</tr>
 	</table>
 </div>
+
+
+	<!-- LOG CONTENTS -->
+	<table class="tmp col-md-12" *ngIf="allDaylogs != null && allDaylogs.length > 0">
+		<tr>
+			<th>Date</th>
+			<th>Task</th>
+			<th>Running</th>
+			<th>...</th>
+			<th>Dirty</th>
+			<th>Details</th>
+		</tr>
+		<tr *ngFor="let dlog of allDaylogs; let i = index">
+			<td>{{dlog.logDate}}</td>
+			<td>{{dlog.description}}</td>
+			<td>{{dlog.isRunning}}</td>
+			<td>{{dlog.updateFlag}}</td>
+			<td>{{getDirty(i)}}</td>
+			<td>
+				<ul *ngFor="let tlog of dlog.logs">
+					<li>{{getStartStr(tlog)}} - {{getEndStr(tlog)}} ({{getDurationStr(tlog)}}): {{tlog.comment}}</li>
+				</ul>
+			</td>
+		</tr>
+	</table>

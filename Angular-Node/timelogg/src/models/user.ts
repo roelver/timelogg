@@ -13,47 +13,42 @@ export interface IUser {
 export interface IUserModel extends IUser, mongoose.Document {}
 
 export const UserSchema = new mongoose.Schema({
-   email: { type: String, lowercase: true, unique: true },
-   userid: String,
-   displayName: String,
-   role: {
-     type: String,
-     default: 'user'
-   },
+   email:          { type: String, lowercase: true, unique: true },
+   displayName:    String,
+   role:           { type: String, default: 'user' },
    hashedPassword: String,
-   provider: String,
-   salt: String
+   provider:       String,
+   salt:           String
 });
 
 UserSchema
-  .virtual('password')
-  .set(function(password: string): any {
-     this._password = password;
-     this.salt = this.makeSalt();
-     this.hashedPassword = this.encryptPassword(password);
-  })
-  .get(function(): string {
-    return this._password;
-  });
+    .virtual('password')
+    .set(function(password: string): any {
+        this._password = password;
+        this.salt = this.makeSalt();
+        this.hashedPassword = this.encryptPassword(password);
+    })
+    .get(function(): string {
+        return this._password;
+    });
 
 UserSchema
-  .virtual('profile')
-  .get(function(): any {
-    return {
-      'name': this.displayName,
-      'role': this.role
-    };
-  });
+    .virtual('profile')
+    .get(function(): any {
+        return {
+            'name': this.displayName,
+            'role': this.role
+        };
+    });
 
-// Non-sensitive info we'll be putting in the token
 UserSchema
-  .virtual('token')
-  .get(function(): any {
-    return {
-      '_id': this._id,
-      'role': this.role
-    };
-  });
+    .virtual('userid')
+    .set(function(id: string): void {
+        this._id = id;
+    })
+    .get(function(): string {
+        return this._id;
+    });
 
 /**
  * Validations
@@ -61,39 +56,24 @@ UserSchema
 
 // Validate empty email
 UserSchema
-  .path('email')
-  .validate(function(email: string): any {
-    return email.length;
-  }, 'Email cannot be blank');
+    .path('email')
+    .validate(function(email: string): any {
+        return email.length;
+    }, 'Email cannot be blank');
 
 UserSchema
-   .path('email')
-   .validate(function(email: string): any {
-      const re = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-      return re.test(email);
-   }, 'Email is not valid');
+    .path('email')
+    .validate(function(email: string): any {
+        const re = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+        return re.test(email);
+    }, 'Email is not valid');
 
 // Validate empty password
 UserSchema
-  .path('hashedPassword')
-  .validate(function(hashedPassword: string): any  {
-    return hashedPassword.length;
-  }, 'Password cannot be blank');
-
-// Validate email is not taken
-UserSchema
-  .path('email')
-  .validate(function(value: string, respond: Function): any {
-     const self = this;
-     this.constructor.findOne({email: value}, function(err: Error, user: IUser): any {
-        if (err) throw err;
-        if (user) {
-           if (self.userid === user.userid) return respond(true);
-           return respond(false);
-        }
-      respond(true);
-    });
-}, 'The specified email address is already in use.');
+    .path('hashedPassword')
+    .validate(function(hashedPassword: string): any  {
+        return hashedPassword.length;
+    }, 'Password cannot be blank');
 
 const validatePresenceOf = function(value: any): boolean {
   return value && value.length;

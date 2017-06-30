@@ -3,44 +3,59 @@ import * as express from 'express';
 import { Daylog, IDaylog, IDaylogModel, ITimelog } from '../../models';
 
 const DaylogKey: string = 'daylog';
+const logDateKey: string = 'logDate';
 
 export class RestDaylog {
 
     constructor() {}
 
     list(
-       request: express.Request,
+        request: express.Request,
         response: express.Response
     ): any {
-         Daylog.find({}).exec(
-            (error: any, daylogs: IDaylogModel[]) => {
-                return response.send({
-                    daylogs: daylogs || []
-                });
-            }
-        );
+        const userId = request.body.authuserid;
+        const logDate = request.params[logDateKey];
+        console.log('List', userId, logDate);
+        Daylog.find({userId: userId, logDate: logDate})
+            .select('logId logDate description isRunning userId logs')
+            .exec(
+                (error: any, daylogs: IDaylogModel[]) => {
+                    const daylogList = daylogs.map((daylog) => {
+                        return this.output(daylog);
+                    })
+                    .sort((a, b) =>
+                        (a.description.toUpperCase() > b.description.toUpperCase() ? 1 : -1));
+
+                    return response.send({
+                        daylogs: daylogList || []
+                    });
+                }
+            );
     }
 
     create(
         request: express.Request,
         response: express.Response
     ): any {
-        let data = [];
-        request.on('data', chunk => {
-            data.push(chunk);
-        }).on('end', () => {
-            let daylogString = Buffer.concat(data).toString();
-            let daylog: IDaylog = daylogString ? JSON.parse(daylogString) : {};
-            Daylog.create(daylog, (error: any, daylogm: IDaylogModel) => {
-                if (daylogm) {
-                    return response.send(daylogm);
-                } else {
-                    return response.status(400).send({
-                        success: false,
-                        message: 'Invalid parameters'
-                    });
-                }
-            });
+        console.log('Create', request.body);
+        let daylog: IDaylog = {
+            logDate: request.body.logDate,
+            userId: request.body.authuserid,
+            description: request.body.description,
+            isRunning: request.body.isRunning,
+            updateFlag: true,
+            logs: request.body.logs
+        };
+
+        Daylog.create(daylog, (error: any, daylogm: IDaylogModel) => {
+            if (daylogm) {
+                return response.send(this.output(daylogm));
+            } else {
+                return response.status(400).send({
+                    success: false,
+                    message: error ? error.message : 'Invalid parameters'
+                });
+            }
         });
     }
 
@@ -48,12 +63,14 @@ export class RestDaylog {
         request: express.Request,
         response: express.Response
     ): any {
+        console.log('Find', request.params, request.body);
         const id = request.params[DaylogKey];
         if (id) {
             Daylog.findById(id).exec(
                 (error: any, daylog: IDaylogModel) => {
+                    console.log('Found', daylog);
                     if (daylog) {
-                        return response.send(daylog);
+                        return response.send(this.output(daylog));
                     } else {
                         return response.status(404).send({
                             success: false,
@@ -70,33 +87,56 @@ export class RestDaylog {
         }
     }
 
-    update(
+    replace(
         request: express.Request,
         response: express.Response
     ): any {
         const id = request.params[DaylogKey];
         if (id) {
-            let data = [];
-            request.on('data', chunk => {
-                data.push(chunk);
-            }).on('end', () => {
-                let daylogString = Buffer.concat(data).toString();
-                let daylogUpdated: IDaylog = daylogString ? JSON.parse(daylogString) : {};
-                Daylog.findById(id).exec(
-                    (error: any, daylog: IDaylogModel) => {
-                        if (daylog) {
-                            daylog.save();
-                            return response.send(daylog);
-                        } else {
-                            return response.status(404).send({
-                                success: false,
-                                message: 'Daylog not found'
-                            });
-                        }
+            let daylogUpdated: IDaylog = request.body;
+            Daylog.findById(id).exec(
+                (error: any, daylog: IDaylogModel) => {
+                    if (daylog) {
+                        daylog = this.applyUpdates(daylog, daylogUpdated, true);
+                        daylog.save();
+                        return response.send(daylog);
+                    } else {
+                        return response.status(404).send({
+                            success: false,
+                            message: 'Daylog not found'
+                        });
                     }
-                );
-            });
+                }
+            );
         } else {
+            response.status(401).send({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+    }
+    merge(
+        request: express.Request,
+        response: express.Response
+    ): any {
+        const id = request.params[DaylogKey];
+        if (id) {
+            let daylogUpdated: IDaylog = request.body;
+            Daylog.findById(id).exec(
+                (error: any, daylog: IDaylogModel) => {
+                    if (daylog) {
+                        daylog = this.applyUpdates(daylog, daylogUpdated, false);
+                        daylog.save();
+                        return response.send(daylog);
+                    } else {
+                        return response.status(404).send({
+                            success: false,
+                            message: 'Daylog not found'
+                        });
+                    }
+                }
+            );
+         } else {
             response.status(401).send({
                 success: false,
                 message: 'Unauthorized'
@@ -133,5 +173,34 @@ export class RestDaylog {
             });
         }
     }
+    output(modelDaylog: IDaylogModel): IDaylog {
+        return {
+            logId: modelDaylog._id,
+            logDate: modelDaylog.logDate,
+            description: modelDaylog.description,
+            userId: modelDaylog.userId,
+            isRunning: modelDaylog.isRunning,
+            updateFlag: true,
+            logs: modelDaylog.logs
+        };
+    }
 
+    applyUpdates(currentDaylog: IDaylogModel, newVal: any, replace: boolean): IDaylogModel {
+        if (replace) { // for PUT
+            currentDaylog.logDate = newVal.logDate || currentDaylog.logDate;
+            currentDaylog.userId = newVal.userId || currentDaylog.userId;
+        }
+        currentDaylog.description = newVal.description || currentDaylog.description;
+        currentDaylog.isRunning = (newVal.isRunning === null ? currentDaylog.isRunning : newVal.isRunning);
+        currentDaylog.logs = this.sortLogs(newVal.logs) || currentDaylog.logs;
+        return currentDaylog;
+    }
+
+    sortLogs(logs: ITimelog[]): ITimelog[] {
+        if (!logs || logs.length === 0) {
+            return null;
+        } else {
+            return logs.sort((a, b) => a.startTime > b.startTime ? 1 : -1);
+        }
+    }
 }

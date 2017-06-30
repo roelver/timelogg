@@ -1,6 +1,4 @@
 import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
-import { ITask } from '../../../models/task';
-import { TaskService } from '../../shared/services/task.service';
 
 const styles: string  = require('./taskform.component.css').toString();
 
@@ -11,30 +9,26 @@ const styles: string  = require('./taskform.component.css').toString();
 })
 export class TaskformComponent implements OnInit {
 
-  @Input()
-  myTask: ITask;
-  editTask: ITask;
+    @Input()
+    myDesc: string;
 
-  @Output()
-  hideForm: EventEmitter<boolean> = new EventEmitter<boolean>();
-  @Output()
-  saveTask: EventEmitter<ITask> = new EventEmitter<ITask>();
+    @Output()
+    deleteTask: EventEmitter<boolean> = new EventEmitter<boolean>();
 
-  constructor(private taskService: TaskService) {}
+    @Output()
+    saveTask: EventEmitter<string> = new EventEmitter<string>();
+
+  constructor() {}
 
   ngOnInit(): void {
-      this.editTask = this.taskService.cloneTask(this.myTask);
-      console.log('Edit task', this.editTask, this.myTask);
+      console.log('Edit task', this.myDesc);
   }
 
-  hide(): void {
-     this.editTask = this.taskService.cloneTask(this.myTask);
-     this.hideForm.emit(true);
+  delete(): void {
+     this.deleteTask.emit(true);
   }
 
   save(): void {
-     console.log('Save task', this.editTask);
-     this.saveTask.emit(this.editTask);
+     this.saveTask.emit(this.myDesc);
   }
-
 }

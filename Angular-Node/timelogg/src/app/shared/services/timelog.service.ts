@@ -1,106 +1,232 @@
 import { Injectable, EventEmitter } from '@angular/core';
+import { Http, Headers, Response } from '@angular/http';
+import { Observable, Subscription, Subject } from 'rxjs';
+import { AuthService } from '../../auth';
 import * as moment from 'moment';
 
-import { TaskService } from './task.service';
-
-import { ITask } from '../../../models/task';
 import { IDaylog } from '../../../models/daylog';
 import { ITimelog } from '../../../models/timelog';
 import { Tasklog } from '../../../models/tasklog';
+import {IUser} from '../../../models/user';
+import {UtilService} from './util.service';
 
-const chars = 'abcde fghijkl mnopqrstuv wxyz abdefgikl mnoprstuv aeiouaeiou';
 const msDay = 24 * 60 * 60 * 1000;
-
+const monthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 @Injectable()
 export class TimelogService  {
 
-   testUser: string = 'roel@romaniflo.nl';
+    headers: Headers;
 
-   tasks: ITask[] = [];
+    daylogChanged: Subject<any> = new Subject<any>();
+    updateTimelines: Subject<any> = new Subject<any>();
 
-   fixedTestDaylogs: IDaylog[] = [
-     this.newDaylog('20170507', 'task4', 'roel@romaniflo.nl', 'Bugfixes CDD', false),
-     this.newDaylog('20170507', 'task2', 'roel@romaniflo.nl', 'Develop ICV solution', false),
-     this.newDaylog('20170507', 'task3', 'roel@romaniflo.nl', 'Resource meeting', false)];
+    dateChanged: EventEmitter<string> = new EventEmitter<string>();
 
-   daylogs: IDaylog[] = [];
+    private daylogs: IDaylog[] = [];
 
-   currentDate: string;
-   currentTaskRunning: ITask = null;
+   private currentDate: string;
+   private currentUser: IUser;
+   private currentDlogRunning: number = -1;
+   private copyLastDays: number = 7;
 
-   daylogChanged: EventEmitter<any> = new EventEmitter<any>();
-   dateChanged: EventEmitter<string> = new EventEmitter<string>();
-
-   constructor(private taskService: TaskService) {
-      this.daylogs = this.addTimeLogs(this.fixedTestDaylogs);
-      this.tasks = this.taskService.loadUserTasks(this.testUser);
-      console.log('Loaded tasks', this.tasks);
-      this.taskService.taskListChanged.subscribe(() => {
-         this.tasks = this.taskService.loadUserTasks(this.testUser);
-         console.log('Updating tasks', this.tasks);
-      });
+   constructor(private http: Http, private authService: AuthService, private utilService: UtilService) {
+       this.populateAuth();
+       this.authService.userChanged.subscribe((user) => {
+           this.currentUser = user;
+           this.headers = this.authService.getHeaders();
+       });
       setTimeout(this.refresh.bind(this), 60000); // refresh every minute
    }
 
-   refresh(): void {
-      this.daylogChanged.emit();
-      setTimeout(this.refresh.bind(this), 60000);
+   populateAuth(): void {
+       this.currentUser = this.authService.getCurrentUser();
+       this.headers = this.authService.getHeaders();
    }
 
-   setCurrentDate(dt: string): void { // format YYYYMMDD
+   getDirty(idx: number): string {
+       return this.daylogs[idx].dirtyCode;
+   }
+   retrieveDaylogs(): Observable<IDaylog[]> {
+       if (this.headers === null) {
+           this.populateAuth();
+       }
+       this.currentDlogRunning = -1;
+       return this.http.get('/rest/daylog/list/' + this.currentDate, { headers: this.headers })
+           .map((res: Response) => {
+               if (res.status < 400) {
+                   this.daylogs = res.json().daylogs;
+                  // console.log('Retrieved:', res);
+                   for (let i = 0 ; i < this.daylogs.length ; i++) {
+                       this.daylogs[i].dirtyCode = null;
+                     //  this.dirtyDaylogs[i] = null;
+                       if (this.daylogs[i].isRunning) {
+                           this.currentDlogRunning = i;
+                       }
+                   }
+                   return this.daylogs;
+                } else {
+                   return Observable.throw({ message: 'No user is logged in' });
+               }
+           });
+    }
+
+    // getTaskIndex(description: string): number {
+    //    let idx = -1;
+    //    for (let i = 0; i < this.daylogs.length; i++) {
+    //        if (this.daylogs[i].description === description) {
+    //            idx = i;
+    //            break;
+    //        }
+    //    }
+    //    return idx;
+    // }
+    //
+    getTasklist(): string[] {
+       return this.daylogs
+           .map((dl) => dl.description);
+    }
+
+    sortDaylogs(): void {
+        const dls = this.daylogs;
+        this.daylogs = dls
+            .sort((a, b) => a.description.toUpperCase() > b.description.toUpperCase() ? 1 : -1);
+        this.daylogChanged.next();
+    }
+
+    deleteTask(idx: number): void {
+       this.daylogs[idx].dirtyCode = 'D';
+        this.saveDlogs();
+    }
+
+    refresh(): void {
+       const d = new Date();
+       console.log('Refresh at ', d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds());
+       if (this.currentDlogRunning >= 0) {
+           // Toggle een update of the model
+           this.daylogs[this.currentDlogRunning].updateFlag = !this.daylogs[this.currentDlogRunning].updateFlag;
+           this.updateTimelines.next();
+       }
+        this.saveDlogs();
+       setTimeout(this.refresh.bind(this), 60000);
+   }
+
+   saveDlogs(): void {
+      for (let i = 0; i < this.daylogs.length; i++) {
+          if (this.daylogs[i].dirtyCode === 'A') {
+              this.insertDaylog(this.daylogs[i], i).subscribe((result) => {
+                  console.log('inserted', result.logId);
+                  if (result.logId != null ) {
+                      this.daylogs[result.idx].logId = result.logId;
+                  }
+                  this.daylogs[result.idx].dirtyCode = null;
+              });
+           }
+          if (this.daylogs[i].dirtyCode === 'U') {
+              console.log('update', this.daylogs[i]);
+              this.updateDaylog(this.daylogs[i], i).subscribe((idx) => this.daylogs[idx].dirtyCode = null);
+          }
+          if (this.daylogs[i].dirtyCode === 'D') {
+              this.deleteDaylog(this.daylogs[i], i).subscribe((idx) => {
+                  this.daylogs.splice(idx, 1);
+              });
+          }
+      }
+   }
+
+   insertDaylog(dl: IDaylog, idx: number): Observable<any> {
+       if (dl.logs && dl.logs.length > 0 && dl.logs[dl.logs.length - 1].endTime < 0) {
+           dl.logs[dl.logs.length - 1].endTime = null;
+       }
+       return this.http.post('/rest/daylog', JSON.stringify(dl), { headers: this.headers })
+           .map((res: Response) => {
+               if (res.status >= 400) {
+                   throw new Error('Update failed' );
+               } else {
+                   const newDaylog: IDaylog = res.json();
+                  // console.log('Inserted daylog', dl, 'Result-id', newDaylog.logId);
+                   return {logId: newDaylog.logId, idx: idx} ;
+               }
+           })
+           .catch ((error) => Observable.throw(error));
+   }
+
+    updateDaylog(dl: IDaylog, idx: number): Observable<number> {
+        if (dl.logs && dl.logs.length > 0 && dl.logs[dl.logs.length - 1].endTime < 0) {
+            dl.logs[dl.logs.length - 1].endTime = null;
+        }
+         return this.http.put('/rest/daylog/' + dl.logId, JSON.stringify(dl), { headers: this.headers })
+            .map((res: Response) => {
+                if (res.status >= 400) {
+                    throw new Error('Update failed' );
+                }
+                return idx;
+            })
+            .catch(error => Observable.throw(error));
+    }
+
+    deleteDaylog(dl: IDaylog, idx: number): Observable<number> {
+        return this.http.delete('/rest/daylog/' + dl.logId,  { headers: this.headers })
+            .map((res: Response) => {
+                if (res.status >= 400) {
+                    throw new Error('Delete failed' );
+                }
+                return idx;
+            })
+            .catch(error => Observable.throw(error));
+    }
+
+    setCurrentDate(dt: string): void { // format YYYYMMDD
       this.currentDate = dt;
       this.dateChanged.emit(this.currentDate);
-      console.log('TimelogService, update date', this.currentDate);
+      this.retrieveDaylogs().subscribe((daylogs) => {
+            this.daylogs = daylogs;
+            this.daylogChanged.next();
+        });
    }
 
    getCurrentDate(): string {
       return this.currentDate;
    }
 
-   getDaylogs(userEmail: string, generated: boolean): IDaylog[] {
-      if (generated) {
-         this.populateRandomDaylogs();
-         this.daylogChanged.emit();
-      }
-      const filtered = this.daylogs
-         .filter( dl => {return dl.userId === userEmail; } )
-         .sort((a, b) => {return (a.description > b.description ? 1 : -1); } );
-      console.log('getDaylogs', this.daylogs, filtered, userEmail);
-      return filtered;
+   getDaylogs(): IDaylog[] {
+      return this.daylogs;
    }
 
-   addTasklog(log: Tasklog, date: string, userEmail: string, fromForm: boolean): void {
-      console.log('Adding log', log);
-      this.adjustOverlap(log);
-      const tasklog = new Tasklog(log.taskId, log.fromHH, log.fromMM, log.fromSS,
-                                  log.comment, log.toHH, log.toMM, log.toSS);
-      const tlog: ITimelog = { startTime: tasklog.getStartTime(),
-                     endTime: tasklog.getStopTime(),
-                     comment: tasklog.comment };
-      if (this.isInDaylogs(tasklog.taskId, date)) {
-         console.log('Adding to existing log', this.daylogs);
-         this.daylogs.map(dl => {
-               if (dl.taskId === tasklog.taskId && dl.logDate === date) {
-                  dl.logs.push(tlog);
-                  dl.logs.sort((a, b) => {return (a.startTime - b.startTime); });
-                  if (!fromForm) {
-                     dl.isRunning = true;
-                  }
-               }
-            });
-      } else {
-         if (!fromForm) {
-            this.daylogs.map(dl => { dl.isRunning = false; } );
-         }
-         const dlog: IDaylog = this.newDaylog(date, log.taskId, userEmail, this.getTaskDescription(log.taskId), !fromForm);
-         dlog.logs.push(tlog);
-         this.daylogs.push(dlog);
-      }
-      this.daylogChanged.emit();
+    // getDaylog(idx: number): IDaylog {
+    //     return this.daylogs[idx];
+    // }
+    //
+    markDirty(idx: number): void {
+       this.daylogs[idx].dirtyCode = this.daylogs[idx].dirtyCode || 'U';
+    }
+
+    addTasklog(log: Tasklog, date: string): void {
+       if (log.getStartTime() > log.getStopTime()) {
+          console.error('Start must be before End!!');
+          return;
+       }
+       const tasklog = new Tasklog(log.taskDesc, log.fromHH, log.fromMM, log.fromSS,
+           log.comment, log.toHH, log.toMM, log.toSS);
+       const tlog: ITimelog = { startTime: tasklog.getStartTime(),
+           endTime: tasklog.getStopTime(),
+           comment: tasklog.comment };
+       this.adjustOverlap(tlog, log.taskDesc);
+       this.daylogChanged.next();
    }
 
-   updateTimelog(log: ITimelog, dlog: IDaylog, idx: number): void {
+   markUpdatedAll(): void {
+       this.daylogs.forEach((dl) => dl.updateFlag = !dl.updateFlag);
+       this.daylogChanged.next();
+   }
+
+   updateTaskDescription(idx: number, desc: string): void {
+       this.daylogs[idx].description = desc;
+       this.daylogs[idx].dirtyCode = this.daylogs[idx].dirtyCode || 'U';
+       this.daylogChanged.next();
+   }
+
+   updateTimelog(log: ITimelog, dlogIdx: number, idx: number): void {
 
       const startStr = this.getParticlesStr(log.startTime);
       let endStr = null;
@@ -108,172 +234,218 @@ export class TimelogService  {
          endStr = this.getParticlesStr(log.endTime);
       }
 
-      const tasklog = new Tasklog(dlog.taskId, parseInt(startStr.substr(0, 2), 10),
-                                               parseInt(startStr.substr(3, 2), 10),
-                                               parseInt(startStr.substr(6, 2), 10),
-                                  log.comment, (endStr ? parseInt(endStr.substr(0, 2), 10) : null),
-                                               (endStr ? parseInt(endStr.substr(3, 2), 10) : null),
-                                               (endStr ? parseInt(endStr.substr(6, 2), 10) : null));
-      this.adjustOverlap(tasklog, dlog);
-
-      this.daylogs.map(dl => {
-            if (dl.taskId === tasklog.taskId && dl.logDate === dlog.logDate) {
-                  dl.logs[idx] = log;
-                  dl.logs.sort((a, b) => {return (a.startTime - b.startTime); });
-               }
-            });
-      this.daylogChanged.emit();
+      this.adjustOverlap(log, this.daylogs[dlogIdx].description);
+      this.daylogChanged.next();
+      this.updateTimelines.next();
    }
 
-   isInDaylogs(taskId: string, date: string): boolean {
-      const found = this.daylogs.filter(dl => { return dl.taskId === taskId && dl.logDate === date; } );
-      return (found != null && found.length > 0);
+   // getInDaylogs(description: string, date: string): number {
+   //     for (let i = 0 ; i < this.daylogs.length ; i++) {
+   //         if (this.daylogs[i].description === description && this.daylogs[i].logDate === date) {
+   //             return i;
+   //         }
+   //     }
+   //     return -1;
+   // }
+   //
+    copyPreviousDays(): Observable<any> {
+
+       return this.http.get('/rest/task/' + this.daysBack(this.copyLastDays), {headers: this.headers})
+           .map((resp: Response) => {
+               const tasks: string[] = resp.json().tasks;
+                console.log('Copy found', tasks, tasks.length);
+                for (let i = 0; i < tasks.length; i++) {
+                    let found: boolean = false;
+                    console.log('Checking task', tasks[i]);
+                    for (let j = 0; j < this.daylogs.length && !found; j++) {
+                        found = tasks[i].toUpperCase() === this.daylogs[j].description.toUpperCase();
+                    }
+                    if (!found) {
+                        console.log('Adding task', tasks[i]);
+                        this.daylogs.push(this.newDaylog(this.currentDate, null, this.currentUser.userid, tasks[i], false ));
+                    } else {
+                        console.log('Ignore task', tasks[i]);
+                    }
+                }
+                this.sortDaylogs();
+                return 'x';
+           });
+    }
+
+    getDaylogForTask(description: string): IDaylog[] {
+      return this.daylogs.filter(dl => {return dl.description === description && dl.logDate === this.currentDate; } );
    }
 
-   getDaylogForTask(taskId: string): IDaylog[] {
-      return this.daylogs.filter(dl => {return dl.taskId === taskId && dl.logDate === this.currentDate; } );
+   daysBack(daysBefore: number): string {
+       if (!(daysBefore > 0)) return this.currentDate;
+       let year = parseInt(this.currentDate.substr(0, 4), 10);
+       let month = parseInt(this.currentDate.substr(4, 2), 10) - 1;
+       let day = parseInt(this.currentDate.substr(6, 2), 10) - 7;
+       if (day < 1 ) {
+           month = month - 1;
+           if (month < 0) {
+               month = 11;
+               year--;
+           }
+           day = day + monthDays[month];
+       }
+       return  '' + year + this.utilService.pad(month + 1) + this.utilService.pad(day + 1);
    }
 
-   getTaskDescription(taskid: string): string {
-      let result = '';
-      this.tasks.forEach(task => {
-            if (task.taskId === taskid) {
-               result = task.description;
-            }
-         });
-      return result;
+   // getDlogDescription(logid: string): string {
+   //    let result = '';
+   //    this.daylogs.forEach(task => {
+   //          if (task.logId === logid) {
+   //             result = task.description;
+   //          }
+   //       });
+   //    return result;
+   // }
+   //
+   startRunning(dlogIdx: number): void {
+      this.stopRunning();
+      this.currentDlogRunning = dlogIdx;
+      const timelog: ITimelog = {startTime: this.utilService.getLocalTime(), endTime: -1};
+    //  console.log('Start', this.daylogs[this.currentDlogRunning], timelog);
+      if (this.daylogs[this.currentDlogRunning] && !this.daylogs[this.currentDlogRunning].logs) {
+          this.daylogs[this.currentDlogRunning].logs = [];
+      }
+      this.daylogs[this.currentDlogRunning].isRunning = true;
+      this.daylogs[this.currentDlogRunning].logs.push(timelog);
+      this.daylogs[this.currentDlogRunning].dirtyCode = this.daylogs[this.currentDlogRunning].dirtyCode || 'U';
+    //  console.log('Started', this.daylogs[this.currentDlogRunning], this.dirtyDaylogs[this.currentDlogRunning]);
+      this.saveDlogs();
    }
 
-   startRunning(task: ITask): void {
-      const now = new Date();
-      const tasklog = new Tasklog(task.taskId, now.getHours(), now.getMinutes(), now.getSeconds(), '');
-      this.stopRunning(this.currentTaskRunning);
-      this.addTasklog(tasklog, this.currentDate, this.testUser, false);
-      this.currentTaskRunning = task;
-   }
-
-   stopRunning(task: ITask): void {
-      console.log('Stop', task);
-      const now = new Date();
-      if (task !== null) {
-         this.daylogs.map(dl => {
-            console.log('Comparing', dl.taskId, dl.logDate,  this.currentDate,
-                        dl.taskId === task.taskId, dl.logDate === this.currentDate);
-            if (dl.taskId === task.taskId && dl.logDate === this.currentDate) {
-                  dl.isRunning = false;
-                  dl.logs[dl.logs.length - 1].endTime =
-                     (now.getMilliseconds() > dl.logs[dl.logs.length - 1].startTime) ?
-                        now.getMilliseconds() :
+   stopRunning(): void {
+     //  console.log('Stop', this.currentDlogRunning);
+      if (this.currentDlogRunning >= 0) {
+          const now = this.utilService.getLocalTime();
+          const dl = this.daylogs[this.currentDlogRunning];
+          dl.isRunning = false;
+          dl.logs[dl.logs.length - 1].endTime =
+                     (now > dl.logs[dl.logs.length - 1].startTime) ?
+                        now :
                         dl.logs[dl.logs.length - 1].startTime + 1000;
-            }
-         });
-         this.currentTaskRunning = null;
+        //  console.log('Stopping', this.daylogs[this.currentDlogRunning], dl);
+          this.daylogs[this.currentDlogRunning].dirtyCode = this.daylogs[this.currentDlogRunning].dirtyCode || 'U';
+          this.currentDlogRunning = -1;
+          this.saveDlogs();
       }
    }
 
-   adjustOverlap(log: Tasklog, currentDlog: IDaylog = null): void {
-      console.log('In adjustOverlap', log, currentDlog);
-      const startTime = (log.fromHH * 60 * 60 * 1000) +
-                        (log.fromMM * 60 * 1000) +
-                        ((log.fromSS ? log.fromSS : 0) * 1000);
-      const endTime = ((log.toHH ? log.toHH : 0) * 60 * 60 * 1000) +
-                      ((log.toMM ? log.toMM : 0) * 60 * 1000) +
-                      ((log.toSS ? log.toSS : 0) * 1000);
-      console.log('adjustOverlap', log, startTime, endTime);
-      this.daylogs.map(dl => {
-         console.log('process daylog', dl);
-         if (dl.logDate === this.currentDate) {
-            if (currentDlog === null || dl.taskId !== currentDlog.taskId) {
-               // Adjust other timelogs
-               dl.logs.map((l, idx) => {
-                  console.log('process log', l);
-                  if (endTime !== 0 && l.endTime !== 0) {
-                     if (startTime >= l.startTime && startTime <= l.endTime && endTime >= l.endTime) {
-                        // Overlaps at end, adjust end
-                        console.log('Overlaps at end, adjust end');
-                        l.endTime = startTime - 1000;
-                        if (l.endTime <= l.startTime) {
-                           console.log('Negative or 0, delete');
-                           dl.logs.splice(idx, 1);
-                        }
+   adjustOverlap(log: ITimelog, taskDesc: string): void {
+      const now = this.utilService.getLocalTime();
+      let switchRun = false;
+      if (log.endTime > now) {
+          log.endTime = now;
+          switchRun = true;
+      }
+      console.log('>adjustOverlap Check for', log);
+      this.daylogs.map((dl, dlidx) => {
+         console.log('>adjustOverlap  process daylog', dl);
+         const sameTask = dl.description === taskDesc;
+         if (sameTask) {
+             if (switchRun) {
+                 const currentRunning = this.currentDlogRunning;
+                 this.startRunning(dlidx);
+                 if (currentRunning >= 0) {
+                     // delete task that was running
+                     this.daylogs[currentRunning].logs.splice(this.daylogs[currentRunning].logs.length - 1, 1);
+                 }
+                 dl.logs[dl.logs.length - 1].startTime = log.startTime;
+                 dl.logs[dl.logs.length - 1].comment = log.comment;
+             } else {
+                 dl.logs.push(log);
+                 dl.logs.sort((a, b) => {return (a.startTime - b.startTime); });
+                 dl.logs = this.optimize(dl.logs);
+             }
+             dl.dirtyCode = dl.dirtyCode || 'U';
+         } else {
+             dl.logs.map((l, idx) => {
+                 console.log('>adjustOverlap process log', l);
+                 if (log.startTime >= l.startTime && log.startTime <= l.endTime && log.endTime >= l.endTime) {
+                     // Overlaps at end, adjust end
+                     console.log('>>adjustOverlap: Overlaps at end, adjust end');
+                     l.endTime = log.startTime - 1000;
+                     dl.dirtyCode = dl.dirtyCode || 'U';
+                 } else {
+                     if (log.endTime >= l.startTime && log.endTime <= l.endTime && log.startTime <= l.startTime) {
+                         // Overlaps at begin, adjust start
+                         console.log('>>adjustOverlap: Overlaps at begin, adjust start');
+                         l.startTime = log.endTime + 1000;
+                         dl.dirtyCode = dl.dirtyCode || 'U';
                      } else {
-                        if (endTime >= l.startTime && endTime <= l.endTime && startTime <= l.startTime) {
-                           // Overlaps at begin, adjust start
-                           console.log('Overlaps at begin, adjust start');
-                           l.startTime = endTime + 1000;
-                        } else {
-                           if (startTime >= l.startTime && endTime <= l.endTime) {
-                              // in between, cut log in 2
-                              console.log('in between, cut log in 2');
-                              const newEnd = Math.floor(l.endTime / 1000);
-                              const newEndHH = Math.floor(newEnd / (60 * 60));
-                              const newEndMM = Math.floor(((newEnd / (60 * 60)) - newEndHH) * 60);
-                              const newEndSS = (newEnd % 60);
-                              l.endTime = startTime - 1000;
-                              const newTask = new Tasklog(dl.taskId, log.toHH, log.toMM, log.toSS,
-                                                          l.comment, newEndHH, newEndMM, newEndSS);
-                              console.log('Insert new Tasklog', newTask);
-                              this.addTasklog(newTask, this.currentDate, this.testUser, true);
-                           } else {
-                              if (startTime <= l.startTime && endTime >= l.endTime) {
+                         if (log.startTime >= l.startTime && log.endTime <= l.endTime) {
+                             // in between, cut log in 2
+                             console.log('>>adjustOverlap: in between, cut log in 2');
+                             const saveEndTime = l.endTime;
+                             l.endTime = log.startTime - 1000;
+                             const newLog: ITimelog = {
+                                 startTime: log.endTime + 1000,
+                                 endTime: saveEndTime,
+                                 comment: l.comment
+                             };
+                             dl.logs.push(newLog);
+                             dl.logs.sort((a, b) => {
+                                 return (a.startTime - b.startTime);
+                             });
+                             dl.logs = this.optimize(dl.logs);
+                             dl.dirtyCode = dl.dirtyCode || 'U';
+                         } else {
+                             if (log.startTime <= l.startTime && l.endTime !== null && log.endTime >= l.endTime) {
                                  // full overlap , delete log
+                                 console.log('>>adjustOverlap: full overlap, delete');
                                  dl.logs.splice(idx, 1);
-                              }
-                           }
-                        }
+                                 dl.dirtyCode = dl.dirtyCode || 'U';
+                             }
+                         }
                      }
-                  }
-               });
-            }
+                 }
+             });
          }
       });
+      this.updateTimelines.next();
    }
 
-   populateRandomDaylogs(): void {
-      this.daylogs = [];
-      const len = Math.floor(Math.random() * this.tasks.length);
-      for (let i = 0; i < len; i++) {
-         const taskid = Math.floor(Math.random() * this.tasks.length);
-         this.daylogs.push(this.createRandomDaylog(this.testUser, this.tasks[taskid],
-                                                   Math.floor((Math.random() * 5)) + 1, null));
-         this.tasks.splice(taskid, 1);
-      }
+   optimize(logs: ITimelog[]): ITimelog[] {
+       for (let i = 1; i < logs.length; i++) {
+           if (logs[i - 1].endTime > logs[i].startTime) {
+               if (logs[i - 1].endTime < logs[i].endTime) {
+                   logs[i - 1].endTime = logs[i].endTime;
+               }
+               logs.splice(i, 1);
+           }
+       }
+       return logs;
    }
 
-   createRandomDaylog(userid: string, task: ITask, numTimelogs: number, logDate?: string): IDaylog {
-
-      if (!logDate) {
-         const dt = new Date();
-         logDate = (dt.getFullYear()) + (dt.getMonth() < 9 ? '0' : '') + (dt.getMonth() + 1) +
-            (dt.getDate() < 10 ? '0' : '') + dt.getDate();
-      }
-      const dlog: IDaylog = this.newDaylog(logDate, task.taskId, userid, task.description, false);
-      let nextStart = 0;
-      for (let i = 0; (i < numTimelogs || 0) || nextStart >= msDay; i++) {
-         const tlog: ITimelog = this.randomTimelog(nextStart);
-         nextStart = tlog.endTime;
-         dlog.logs.push(tlog);
-      }
-      return dlog;
-   }
-
-   randomString(len: number): string {
-      let result = '';
-      for (let i = 0; i < len; i++) {
-         result += chars.charAt(Math.random() * chars.length);
-      }
-      return result;
-   }
-
-   randomTimelog(after: number): ITimelog {
-       const startTime = Math.floor(after + (Math.random() * (msDay / 5)));
-       const endTime = Math.floor(Math.min(startTime + (Math.random() * (msDay / 15)), msDay));
-       return this.newTimelog(startTime, endTime, this.randomString(20));
+   addTask(): void {
+     //  console.log('New task for', this.currentUser);
+       const exists = this.getDaylogForTask('New...');
+     //  console.log('Existing', exists, this.daylogs);
+       if (!exists || exists.length === 0) {
+           const newDaylog: IDaylog = {
+               logId: 'new',
+               description: 'New...',
+               userId: this.currentUser.userid,
+               logDate: this.currentDate,
+               isRunning: false,
+               dirtyCode: 'A',
+               updateFlag: true,
+               logs: []
+           };
+           this.daylogs.push(newDaylog);
+   //        this.dirtyDaylogs.push('A');
+       //    console.log('Creating new daylog', this.daylogs);
+           this.saveDlogs();
+           this.daylogChanged.next();
+       }
    }
 
    delete(dlIndex: number, tlIndex: number): void {
       this.daylogs[dlIndex].logs.splice(tlIndex, 1);
-      this.daylogChanged.emit();
+      this.daylogChanged.next();
    }
 
    getStartStr(tlog: ITimelog): string {
@@ -281,13 +453,18 @@ export class TimelogService  {
    }
 
    getEndStr(tlog: ITimelog): string {
+       if (!tlog.endTime || tlog.endTime < 0) {
+           return 'now';
+       }
       return this.getParticlesStr(tlog.endTime);
    }
 
    getDurationStr(tlog: ITimelog): string {
-      if (tlog.endTime === 0) return '';
-
-      const diff = tlog.endTime - tlog.startTime;
+       let endT = tlog.endTime;
+      if (!endT || endT < 0) {
+          endT = this.utilService.getLocalTime();
+      }
+      const diff = endT - tlog.startTime;
       return this.getParticlesStr(diff);
    }
 
@@ -296,21 +473,22 @@ export class TimelogService  {
    }
 
    getDuration(tlog: ITimelog): number {
-      let ended = tlog.endTime;
-      if (ended === 0) {
-         const now = new Date();
-         ended = ((now.getHours() * 60 * 60 * 1000) +  (now.getMinutes() * 60 * 1000) + (now.getSeconds() * 1000));
-      }
-      return ended - tlog.startTime;
+       let endT = tlog.endTime;
+       if (!endT || endT < 0) {
+           endT = this.utilService.getLocalTime();
+       }
+      return endT - tlog.startTime;
    }
 
    getBarLeftPosition(tlog: ITimelog): number {
-      const leftBarPos = Math.floor((tlog.startTime / msDay) * 2400) + 1;
-      return leftBarPos;
+       const msecOnDay = Math.floor(tlog.startTime % msDay);
+       const leftBarPos = Math.floor((msecOnDay / msDay) * 2400) + 1;
+       return leftBarPos;
    }
 
    getBarWidth(tlog: ITimelog): number {
-       return Math.floor((this.getDuration(tlog) / msDay) * 2400) + 1 ;
+       const barWidth = Math.floor((this.getDuration(tlog) / msDay) * 2400) + 1;
+       return barWidth ;
    }
 
    getDetails(tlog: ITimelog): string {
@@ -332,31 +510,10 @@ export class TimelogService  {
       return tlog;
    }
 
-   newDaylog(logDate: string, taskId: string, userId: string,
+   newDaylog(logDate: string, logId: string, userId: string,
                  description: string, isRunning: boolean): IDaylog {
-      const dl = {logDate, taskId, userId, description, isRunning, logs: []};
+      const dl = {logDate, logId, userId, description, isRunning, dirtyCode: 'A', updateFlag: true, logs: []};
       return dl;
    }
-   newTimelog(startTime: number, endTime: number, comment: string): ITimelog {
-      const tl = {startTime, endTime, comment};
-      return tl;
-   }
 
-   addTimeLogs(dlogs: IDaylog[]): IDaylog[] {
-      console.log('Daylogs before', dlogs);
-      dlogs[0].logs.push(this.newTimelog(11861359, 16741812, 'nfoshw  jkibbzi iul '));
-      dlogs[0].logs.push(this.newTimelog(27705858, 29075424, 'nfgvt opi z t tojucu'));
-      dlogs[0].logs.push(this.newTimelog(33355870, 34564983, 'aednbt tnbircms ejdo'));
-      dlogs[0].logs.push(this.newTimelog(46436803, 47809766, 'uzo ux hsxiuae otvui'));
-
-      dlogs[1].logs.push(this.newTimelog(15653995, 16473350, 're urvj aeetupuuoidb'));
-
-      dlogs[2].logs.push(this.newTimelog(10796311, 15962859, 'o rtp   efbaieruimfy'));
-      dlogs[2].logs.push(this.newTimelog(28814938, 34424716, 'dlvordeoykiuejgzoirb'));
-      dlogs[2].logs.push(this.newTimelog(43522324, 46397732, 'clroxasuc  bauailqoa'));
-      dlogs[2].logs.push(this.newTimelog(54793305, 56257525, 'gxyenbiatkj oguaordy'));
-      dlogs[2].logs.push(this.newTimelog(56581777, 60835821, 'bh a rbvqadoi ogeevk'));
-      console.log('Daylogs after', dlogs);
-      return dlogs;
-   }
 }

@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 
+const msDay = 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class UtilService {
 
@@ -28,4 +30,34 @@ export class UtilService {
          }, 10);
       }
    }
+
+   getLocalTime(): number {
+       const now = new Date();
+       return ((now.getTime() - (now.getTimezoneOffset() * 60000)) % msDay);
+
+   }
+   isToday(dt: string): boolean {
+      const today = this.formatDate(new Date()).slice(0, 10).replace(/-/g, '');
+      return (today === dt);
+   }
+
+   formatDate(dt: Date): string {
+      return dt.getFullYear() +
+          '-' + this.pad(dt.getMonth() + 1) +
+          '-' + this.pad(dt.getDate()) +
+          'T' + this.pad(dt.getHours()) +
+          ':' + this.pad(dt.getMinutes()) +
+          ':' + this.pad(dt.getSeconds()) +
+          '.' + (dt.getMilliseconds() / 1000).toFixed(3).slice(2, 5) +
+          'Z';
+   }
+
+   pad(x: number): string {
+      if (x < 9) {
+         return '0' + x;
+      }
+      return '' + x;
+   }
+
+
 }

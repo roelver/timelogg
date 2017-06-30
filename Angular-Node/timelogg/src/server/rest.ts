@@ -2,12 +2,15 @@ import * as express from 'express';
 import * as jwt from 'jwt-simple';
 import * as moment from 'moment';
 
+import { Auth } from './auth';
+
 import * as tokencfg from './auth/config';
 
 import { RestTask, RestUser, RestDaylog, RestDefault  } from './rest/index';
 
 export class Rest {
     router: express.Router;
+
 
     constructor() {
         this.router = express.Router();
@@ -25,34 +28,10 @@ export class Rest {
         let restTask = new RestTask();
 
         // List todos
-        this.router.get('/task', this.ensureAuthenticated, (
+        this.router.get('/task/:fromDate', Auth.ensureAuthenticated, (
             request: express.Request,
             response: express.Response
         ) => restTask.list(request, response));
-
-        // Create todo
-        this.router.post('/task', this.ensureAuthenticated, (
-            request: express.Request,
-            response: express.Response
-        ) => restTask.create(request, response));
-
-        // Find a todo
-        this.router.get('/task/:taskId', this.ensureAuthenticated, (
-            request: express.Request,
-            response: express.Response
-        ) => restTask.find(request, response));
-
-        // Update a task
-        this.router.put('/task/:taskId', this.ensureAuthenticated, (
-            request: express.Request,
-            response: express.Response
-        ) => restTask.update(request, response));
-
-        // Delete a task
-        this.router.delete('/task/:taskId', this.ensureAuthenticated, (
-            request: express.Request,
-            response: express.Response
-        ) => restTask.remove(request, response));
     }
 
     private user(): void {
@@ -64,24 +43,22 @@ export class Rest {
             response: express.Response
         ) => restUser.list(request, response));
 
-        this.router.post('/user', [this.ensureAuthenticated, this.isAdmin], (
+        this.router.post('/user', [Auth.ensureAuthenticated, this.isAdmin, (
             request: express.Request,
             response: express.Response
-        ) => {
-              console.log('Allowed', request.body);
-              restUser.create(request, response); });
+        ) => restUser.create(request, response)]);
 
-        this.router.get('/user/:email', [this.ensureAuthenticated, this.isAdmin, (
+        this.router.get('/user/:email', [Auth.ensureAuthenticated, this.isAdmin, (
             request: express.Request,
             response: express.Response
         ) => restUser.find(request, response)]);
 
-        this.router.put('/user/:email', [this.ensureAuthenticated, this.isAdmin, (
+        this.router.put('/user/:email', [Auth.ensureAuthenticated, this.isAdmin, (
             request: express.Request,
             response: express.Response
         ) => restUser.update(request, response)]);
 
-        this.router.delete('/user/:email', [this.ensureAuthenticated, this.isAdmin, (
+        this.router.delete('/user/:email', [Auth.ensureAuthenticated, this.isAdmin, (
             request: express.Request,
             response: express.Response
         ) => restUser.remove(request, response)]);
@@ -91,34 +68,40 @@ export class Rest {
         let restDaylog = new RestDaylog();
 
         // List todos
-        this.router.get('/daylog', [this.ensureAuthenticated, (
+        this.router.get('/daylog/list/:logDate', Auth.ensureAuthenticated, (
             request: express.Request,
             response: express.Response
-        ) => restDaylog.list(request, response)]);
+        ) => restDaylog.list(request, response));
 
         // Create todo
-        this.router.post('/daylog', [this.ensureAuthenticated, (
+        this.router.post('/daylog', Auth.ensureAuthenticated, (
             request: express.Request,
             response: express.Response
-        ) => restDaylog.create(request, response)]);
+        ) => restDaylog.create(request, response));
 
         // Find a todo
-        this.router.get('/daylog/:daylog', this.ensureAuthenticated, (
+        this.router.get('/daylog/:daylog', Auth.ensureAuthenticated, (
             request: express.Request,
             response: express.Response
         ) => restDaylog.find(request, response));
 
-        // Delete a todo
-        this.router.put('/daylog/:daylog', [this.ensureAuthenticated, (
+        // Replace a Daylog
+        this.router.put('/daylog/:daylog', Auth.ensureAuthenticated, (
             request: express.Request,
             response: express.Response
-        ) => restDaylog.update(request, response)]);
+        ) => restDaylog.replace(request, response));
+
+        // Merge a Daylog
+        this.router.patch('/daylog/:daylog', Auth.ensureAuthenticated, (
+            request: express.Request,
+            response: express.Response
+        ) => restDaylog.merge(request, response));
 
         // Delete a todo
-        this.router.delete('/daylog/:daylog', [this.ensureAuthenticated, (
+        this.router.delete('/daylog/:daylog', Auth.ensureAuthenticated, (
             request: express.Request,
             response: express.Response
-        ) => restDaylog.remove(request, response)]);
+        ) => restDaylog.remove(request, response));
     }
 
     private default(): void {
@@ -130,34 +113,11 @@ export class Rest {
         ) => restDefault.request(request, response));
     }
 
-    private ensureAuthenticated(req: any, res: any, next: Function): any {
-      console.log('Ensure auth', req.headers);
-     if (!req.headers.authorization) {
-       return res.status(401).send({ message: 'Please make sure your request has an Authorization header' });
-     }
-     const token = req.headers.authorization.split(' ')[1];
-
-     let payload = null;
-     try {
-       payload = jwt.decode(token, tokencfg.config.TOKEN_SECRET);
-     }
-     catch (err) {
-       return res.status(401).send({ message: err.message });
-     }
-
-     if (payload.exp <= moment().unix()) {
-       return res.status(401).send({ message: 'Token has expired' });
-     }
-     req.body.authemail = payload.sub;
-     req.body.authrole = payload.rol;
-     next();
-    }
-
     private isAdmin(req: any, res: any, next: Function): any {
-      if (req.body.authrole !== 'admin') {
-        return res.status(403).send({ message: 'Not Authorized' });
-      }
-      next();
-   }
+        if (req.body.authrole !== 'admin') {
+            return res.status(403).send({ message: 'Not Authorized' });
+        }
+        next();
+    }
 
 }

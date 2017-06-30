@@ -1,6 +1,6 @@
 export class Tasklog {
 
-   constructor(public taskId: string,
+   constructor(public taskDesc: string,
                public fromHH: number,
                public fromMM: number,
                public fromSS: number = 0,
@@ -8,7 +8,7 @@ export class Tasklog {
                public toHH: number = 0,
                public toMM: number = 0,
                public toSS: number = 0) {
-      this.taskId = taskId;
+      this.taskDesc = taskDesc;
       this.fromHH = fromHH;
       this.fromMM = fromMM;
       this.fromSS = fromSS;
@@ -32,5 +32,12 @@ export class Tasklog {
       return ((this.toHH ? this.toHH : 0) * 60 * 60 * 1000) +
              ((this.toMM ? this.toMM : 0) * 60 * 1000) +
              ((this.toSS ? this.toSS : 0) * 1000);
+   }
+   setStartTime(millis: number): void {
+
+   }
+
+   setStopTime(millis: number): void {
+
    }
 }

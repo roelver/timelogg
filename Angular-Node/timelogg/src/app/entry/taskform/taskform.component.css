@@ -1,6 +1,7 @@
-.taskform button {
+button {
 	  margin-left: 4px;
 }
-.taskform input {
-	  width: 250px;
+input {
+	  width: 230px;
+	  color: #666;
 }
