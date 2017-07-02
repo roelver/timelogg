@@ -1,12 +1,7 @@
-import {Component, OnInit, Input, OnDestroy} from '@angular/core';
-import { TimelineComponent } from '../timeline/timeline.component';
-import { TasklineComponent } from '../taskline/taskline.component';
+import { Component, OnInit, Input, OnDestroy } from '@angular/core';
 import { TimelogService } from '../../shared/services/timelog.service';
 import { IDaylog } from '../../../models';
-import {Subscription} from 'rxjs/Subscription';
-import {ITimelog} from '../../../models/timelog';
-// import 'rxjs/Rx';
-// import {Observable} from 'rxjs/Observable';
+import { Subscription } from 'rxjs/Subscription';
 
 const styles: string = require('./timelinearea.component.css').toString();
 
@@ -33,11 +28,9 @@ export class TimelineareaComponent implements OnInit, OnDestroy {
    ngOnInit(): void {
        this.retrieveDaylogsSubscription = this.tlogService.retrieveDaylogs().subscribe((daylogs) => {
            this.allDaylogs = daylogs;
-           console.log('Daylogs retrieved', this.allDaylogs);
        });
        this.daylogsChangedSubscription = this.tlogService.daylogChanged.subscribe(() => {
            this.allDaylogs = this.tlogService.getDaylogs();
-               console.log('Daylogs refreshed', this.allDaylogs);
        });
    }
 
@@ -49,26 +42,5 @@ export class TimelineareaComponent implements OnInit, OnDestroy {
            this.daylogsChangedSubscription.unsubscribe();
        }
    }
-
-   // Temp. for displaying the daylogs
-    getStartStr(tlog: ITimelog): string {
-       return this.tlogService.getStartStr(tlog);
-    }
-
-    getEndStr(tlog: ITimelog): string {
-        return this.tlogService.getEndStr(tlog);
-    }
-
-    getDurationStr(tlog: ITimelog): string {
-       // To prevent and exception
-        if (tlog.endTime <= 0) {
-            return 'Running';
-        } else {
-            return this.tlogService.getDurationStr(tlog);
-        }
-    }
-    getDirty(idx: number): string {
-       return this.tlogService.getDirty(idx);
-    }
 
 }

@@ -1,74 +1,67 @@
 import * as express from 'express';
 
-import { User, IUser, IUserModel } from '../../models';
+import {User, IUser, IUserModel} from '../../models';
 
 const UserKey: string = 'email';
 
 export class RestUser {
-    constructor() {}
+    constructor() {
+    }
 
-    list(
-       request: express.Request,
-        response: express.Response
-    ): any {
-         User.find({})
-         .select('email displayName role')
-         .exec(
-            (error: any, users: IUserModel[]) => {
-                return response.send({
-                    users: users || []
-                });
-            }
-        );
+    list(request: express.Request,
+         response: express.Response): any {
+        User.find({})
+            .select('email displayName role')
+            .exec(
+                (error: any, users: IUserModel[]) => {
+                    return response.send({
+                        users: users || []
+                    });
+                }
+            );
     }
 
     // Create for admin
-    create(
-        request: express.Request,
-        response: express.Response
-    ): any {
-            let userData: IUser = request.body ? request.body : {};
-            const user = new User({
-              displayName: userData.displayName,
-              email: userData.email,
-              provider: 'local',
-              password: userData.password,
-              userid: userData.userid,
-              role: userData.role
-            });
-            user.save(() => {
-               console.log('User saved', user);
-               return response.send({'_id': user._id, displayName: user.displayName, email: user.email });
+    create(request: express.Request,
+           response: express.Response): any {
+        let userData: IUser = request.body ? request.body : {};
+        const user = new User({
+            displayName: userData.displayName,
+            email: userData.email,
+            provider: 'local',
+            password: userData.password,
+            userid: userData.userid,
+            role: userData.role
+        });
+        user.save(() => {
+                return response.send({'_id': user._id, displayName: user.displayName, email: user.email});
             },
             error => {
-               console.log('Error', error);
-               return response.status(400).send({
-                   success: false,
-                   message: error.errors.email.message ? error.errors.email.message : error.message
-               });
+                return response.status(400).send({
+                    success: false,
+                    message: error.errors.email.message ? error.errors.email.message : error.message
+                });
             });
     }
 
-    find(
-        request: express.Request,
-        response: express.Response
-    ): any {
+    find(request: express.Request,
+         response: express.Response): any {
         const id = request.params[UserKey];
         if (id) {
             User.findById(id)
-            .select('_id displayName userid provider email role')
-            .exec(
-                (error: any, user: IUserModel) => {
-                    if (user) {
-                        return response.send(user);
-                    } else {
-                        return response.status(404).send({
-                            success: false,
-                            message: 'User not found'
-                        });
+                .select('_id displayName userid provider email role')
+                .exec(
+                    (error: any, user: IUserModel) => {
+                        if (user) {
+                            return response.send(user);
+                        } else {
+                            return response.status(404).send({
+                                success: false,
+                                message: 'User not found'
+                            });
+                        }
                     }
-                }
-            );
+                );
         } else {
             response.status(400).send({
                 success: false,
@@ -77,10 +70,8 @@ export class RestUser {
         }
     }
 
-    update(
-        request: express.Request,
-        response: express.Response
-    ): any {
+    update(request: express.Request,
+           response: express.Response): any {
         const id = request.params[UserKey];
         if (id) {
             let data = [];
@@ -92,8 +83,12 @@ export class RestUser {
                 User.findById(id).exec(
                     (error: any, user: IUserModel) => {
                         if (user) {
-                            if (userUpdated.email) { user.email = userUpdated.email; }
-                            if (userUpdated.displayName) { user.displayName = userUpdated.displayName; }
+                            if (userUpdated.email) {
+                                user.email = userUpdated.email;
+                            }
+                            if (userUpdated.displayName) {
+                                user.displayName = userUpdated.displayName;
+                            }
                             user.save();
                             return response.send(user);
                         } else {
@@ -113,10 +108,8 @@ export class RestUser {
         }
     }
 
-    remove(
-        request: express.Request,
-        response: express.Response
-    ): any {
+    remove(request: express.Request,
+           response: express.Response): any {
         const id = request.params[UserKey];
         if (id) {
             User.findById(id).exec(

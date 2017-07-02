@@ -2,7 +2,7 @@
 	 z-index: 50;
     overflow: hidden;
     background-color: #333333;
-    height: 80px;
+    height: 120px;
     padding-top: 20px;
 }
 .navbar {
@@ -44,11 +44,14 @@ ul.nav {
     padding: 5px 20px 5px 20px;
     border-radius: 5px 5px 0 0;
 }
-.navbar li.active a, .navbar li:hover a{
+.navbar li a.active, .navbar li:hover a{
     background-color: #333333;
 }
 .active-user {
     float: right;
     font-weight: bold;
     padding-right: 20px;
+}
+.active {
+    background-color: #0099ff;
 }

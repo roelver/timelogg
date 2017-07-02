@@ -109,6 +109,9 @@ button.showmanualform {
     float: right;
 }
 
+.right {
+    text-align: right;
+}
 .alert-true {
     background-color: #e66;
 }

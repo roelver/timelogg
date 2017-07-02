@@ -1,71 +1,69 @@
-import { Component, OnInit, Input } from '@angular/core';
-import { UtilService, TimelogService } from '../../shared/services';
-import { TaskformComponent } from '../taskform/taskform.component';
+import {Component, OnInit, Input} from '@angular/core';
+import {UtilService, TimelogService} from '../../shared/services';
 
 const styles: string = require('./taskline.component.css').toString();
 
 @Component({
-  selector: 'tl-taskline',
-  templateUrl: 'taskline.component.html',
-  styles: [styles]
+    selector: 'tl-taskline',
+    templateUrl: 'taskline.component.html',
+    styles: [styles]
 })
 
 export class TasklineComponent implements OnInit {
 
-  @Input()
-     myTask: string;
-  @Input()
+    @Input()
+    myTask: string;
+    @Input()
     idx: number;
-  @Input()
+    @Input()
     currentDate: string;
-  @Input()
+    @Input()
     userEmail: string;
-  @Input()
+    @Input()
     isRunning: boolean;
 
-   isFormVisible: boolean = false;
-   topMenu: number = 80;
-  today: Date;
+    isFormVisible: boolean = false;
+    topMenu: number = 80;
+    today: Date;
 
-   myForm: TaskformComponent;
+    constructor(private tlogService: TimelogService,
+                private utilService: UtilService) {
+    }
 
-  constructor(private tlogService: TimelogService,
-              private utilService: UtilService) {}
+    ngOnInit(): void {
+    }
 
-  ngOnInit(): void {}
+    startRunning(): void {
+        this.isRunning = true;
+        this.tlogService.startRunning(this.idx);
+        this.utilService.scrollHorizontal((new Date()).getHours());
+    }
 
-   startRunning(): void {
-      this.isRunning = true;
-      this.tlogService.startRunning(this.idx);
-      this.utilService.scrollHorizontal((new Date()).getHours());
-   }
+    stopRunning(): void {
+        this.isRunning = false;
+        this.tlogService.stopRunning();
+    }
 
-   stopRunning(): void {
-      this.isRunning = false;
-      this.tlogService.stopRunning();
-   }
+    isToday(): boolean {
+        return this.utilService.isToday(this.currentDate);
+    }
 
-   isToday(): boolean {
-      return this.utilService.isToday(this.currentDate);
-   }
+    toggleForm(): void {
+        this.isFormVisible = !this.isFormVisible;
+    }
 
-   toggleForm(): void {
-      console.log('Toggle to', !this.isFormVisible);
-      this.isFormVisible = !this.isFormVisible;
-   }
-
-    deleteTask(): void {
+    onDeleteTask(): void {
         this.tlogService.deleteTask(this.idx);
         this.hideForm();
     }
 
-   hideForm(): void {
-      this.isFormVisible = false;
-   }
+    hideForm(): void {
+        this.isFormVisible = false;
+    }
 
-   onSaveTask(desc: string): void {
-      this.myTask = desc;
-      this.tlogService.updateTaskDescription(this.idx, desc);
-      this.hideForm();
-   }
- }
+    onSaveTask(desc: string): void {
+        this.myTask = desc;
+        this.tlogService.updateTaskDescription(this.idx, desc);
+        this.hideForm();
+    }
+}

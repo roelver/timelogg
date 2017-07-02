@@ -1,2 +1,33 @@
-<h2>Summary</h2>
-<button (click)="onNavigate()">Return to Entry</button>
+<div class="row">
+
+    <div class="col-md-offset-8 col-md-4 right">
+        <input type="date" [value]="dt" (change)="onDateChange($event.target.value)"/>
+    </div> <!-- .col-md4 -->
+</div>
+<div class="row">
+    <div class="col-md-12">
+
+        <table class="summary table-bordered" *ngIf="allDaylogs != null && allDaylogs.length > 0">
+            <tr>
+                <th class="taskname">Task</th>
+                <th class="details">Details</th>
+                <th class="duration">Total Duration</th>
+            </tr>
+            <tbody *ngFor="let dlog of allDaylogs; let i = index">
+            <tr *ngFor="let tlog of dlog.logs; let j = index">
+                <td [rowSpan]="dlog.logs?.length || 1" *ngIf="j === 0" class="taskname">{{dlog.description}}</td>
+                <td class="details">
+                    {{getStartStr(tlog)}} - {{getEndStr(tlog)}} ({{getDurationStr(tlog)}}): {{tlog.comment}}
+                </td>
+                <td [rowSpan]="dlog.logs?.length || 1" *ngIf="j === 0" class="duration">{{ taskDuration(i) }}</td>
+            </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" class="footer">Total time</td>
+                    <td colspan="2" class="footer">{{ totalDuration() }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

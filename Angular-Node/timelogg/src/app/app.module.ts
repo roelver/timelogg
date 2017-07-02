@@ -48,7 +48,7 @@ import { AboutComponent } from './about/about.component';
     ],
     providers: [
       AuthService,
-      AuthGuard
+      AuthGuard,
    ],
     bootstrap: [
         AppComponent

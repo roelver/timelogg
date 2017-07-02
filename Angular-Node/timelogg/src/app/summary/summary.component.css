@@ -1,17 +1,27 @@
 table.summary {
-    width: 80%;
-    margin-left: 20px;
-    border: 1px solid #999;
+    width: 100%;
+    border-color: #999;
 }
-.startsum , .endsum, .durationsum {
-    text-align: center;
+.taskname, .details, .duration {
+    vertical-align: top;
+    padding: 4px;
+}
+.taskname {
+    width: 40%;
+}
+.details {
+    width: 45%;
+}
+.duration {
     width: 15%;
-    padding: 2px 0 2px 0;
 }
-.tasksum , .trailer {
-    padding-left: 6px;
+.right {
+    text-align: right;
 }
-.trailer {
+.footer {
     font-weight: bold;
+    padding: 4px;
 }
-
+input {
+    color: #333333;
+}

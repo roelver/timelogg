@@ -4,17 +4,15 @@ import { CommonModule } from '@angular/common';
 import { ResizableModule } from 'angular-resizable-element';
 import { ContextMenuModule } from 'ngx-contextmenu';
 
-import { SharedModule } from '../shared/shared.module';
-
 import { EntryComponent } from './entry.component';
 import { TaskformComponent } from './taskform';
 import { TasklineComponent } from './taskline';
 import { TimelineComponent, TimelinebarComponent } from './timeline';
 import { TimelineareaComponent } from './timelinearea';
+import { LogformComponent } from './logform.component';
 
 @NgModule({
     imports: [
-        SharedModule,
         CommonModule,
         FormsModule,
         ResizableModule,
@@ -22,6 +20,7 @@ import { TimelineareaComponent } from './timelinearea';
     ],
     declarations: [
         EntryComponent,
+        LogformComponent,
         TaskformComponent,
         TasklineComponent,
         TimelineComponent,

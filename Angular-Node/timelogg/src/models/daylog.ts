@@ -37,7 +37,6 @@ DaylogSchema
 
 DaylogSchema
     .pre('save', function(next: Function): any {
-        console.log('pre-save', this);
         User.findById(this.userId).exec((err: any, userm: IUserModel) => {
           if (err) next(err);
           if (!userm) {

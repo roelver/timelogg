@@ -13,7 +13,7 @@
   	  		   <div class="taskform" tl-taskform
   	  		          [myDesc]="myTask"
   	  		          [hidden]="!isFormVisible"
-  	  		          (delete)="deleteTask($event)"
+  	  		          (deleteTask)="onDeleteTask($event)"
   	  		          (saveTask)="onSaveTask($event)"></div>
 			</td>
 			<td class="taskdesc">{{myTask}}</td>

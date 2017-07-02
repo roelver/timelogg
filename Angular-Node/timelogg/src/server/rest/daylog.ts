@@ -1,21 +1,19 @@
 import * as express from 'express';
 
-import { Daylog, IDaylog, IDaylogModel, ITimelog } from '../../models';
+import {Daylog, IDaylog, IDaylogModel, ITimelog} from '../../models';
 
 const DaylogKey: string = 'daylog';
 const logDateKey: string = 'logDate';
 
 export class RestDaylog {
 
-    constructor() {}
+    constructor() {
+    }
 
-    list(
-        request: express.Request,
-        response: express.Response
-    ): any {
+    list(request: express.Request,
+         response: express.Response): any {
         const userId = request.body.authuserid;
         const logDate = request.params[logDateKey];
-        console.log('List', userId, logDate);
         Daylog.find({userId: userId, logDate: logDate})
             .select('logId logDate description isRunning userId logs')
             .exec(
@@ -23,8 +21,8 @@ export class RestDaylog {
                     const daylogList = daylogs.map((daylog) => {
                         return this.output(daylog);
                     })
-                    .sort((a, b) =>
-                        (a.description.toUpperCase() > b.description.toUpperCase() ? 1 : -1));
+                        .sort((a, b) =>
+                            (a.description.toUpperCase() > b.description.toUpperCase() ? 1 : -1));
 
                     return response.send({
                         daylogs: daylogList || []
@@ -33,11 +31,8 @@ export class RestDaylog {
             );
     }
 
-    create(
-        request: express.Request,
-        response: express.Response
-    ): any {
-        console.log('Create', request.body);
+    create(request: express.Request,
+           response: express.Response): any {
         let daylog: IDaylog = {
             logDate: request.body.logDate,
             userId: request.body.authuserid,
@@ -59,16 +54,12 @@ export class RestDaylog {
         });
     }
 
-    find(
-        request: express.Request,
-        response: express.Response
-    ): any {
-        console.log('Find', request.params, request.body);
+    find(request: express.Request,
+         response: express.Response): any {
         const id = request.params[DaylogKey];
         if (id) {
             Daylog.findById(id).exec(
                 (error: any, daylog: IDaylogModel) => {
-                    console.log('Found', daylog);
                     if (daylog) {
                         return response.send(this.output(daylog));
                     } else {
@@ -87,10 +78,8 @@ export class RestDaylog {
         }
     }
 
-    replace(
-        request: express.Request,
-        response: express.Response
-    ): any {
+    replace(request: express.Request,
+            response: express.Response): any {
         const id = request.params[DaylogKey];
         if (id) {
             let daylogUpdated: IDaylog = request.body;
@@ -115,10 +104,9 @@ export class RestDaylog {
             });
         }
     }
-    merge(
-        request: express.Request,
-        response: express.Response
-    ): any {
+
+    merge(request: express.Request,
+          response: express.Response): any {
         const id = request.params[DaylogKey];
         if (id) {
             let daylogUpdated: IDaylog = request.body;
@@ -136,7 +124,7 @@ export class RestDaylog {
                     }
                 }
             );
-         } else {
+        } else {
             response.status(401).send({
                 success: false,
                 message: 'Unauthorized'
@@ -144,10 +132,8 @@ export class RestDaylog {
         }
     }
 
-    remove(
-        request: express.Request,
-        response: express.Response
-    ): any {
+    remove(request: express.Request,
+           response: express.Response): any {
         const id = request.params[DaylogKey];
         if (id) {
             Daylog.findById(id).exec(
@@ -173,6 +159,7 @@ export class RestDaylog {
             });
         }
     }
+
     output(modelDaylog: IDaylogModel): IDaylog {
         return {
             logId: modelDaylog._id,
@@ -192,7 +179,7 @@ export class RestDaylog {
         }
         currentDaylog.description = newVal.description || currentDaylog.description;
         currentDaylog.isRunning = (newVal.isRunning === null ? currentDaylog.isRunning : newVal.isRunning);
-        currentDaylog.logs = this.sortLogs(newVal.logs) || currentDaylog.logs;
+        currentDaylog.logs = (newVal.logs ? newVal.logs : currentDaylog.logs);
         return currentDaylog;
     }
 

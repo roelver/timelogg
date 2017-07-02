@@ -14,30 +14,29 @@ const styles: string = require('./timelinebar.component.css').toString();
 })
 export class TimelinebarComponent implements OnInit, OnDestroy {
 
-   @Input()
-      idx: number;
+    @Input()
+    idx: number;
 
-  @Input()
+    @Input()
     myTlog: ITimelog;
 
-  @Input()
+    @Input()
     miDlogIdx: number;
 
-  @Input()
-      updateFlag: boolean;
+    @Input()
+    updateFlag: boolean;
 
-    mouseOver: number = -1;
-    isResizable: boolean = false;
-    isResizing:  boolean = false;
+    isResizing: boolean = false;
     updateSubscription: Subscription;
 
     left: string;
     width: string;
     details: string;
 
-  @ViewChild('optionMenu') public optionMenu: ContextMenuComponent;
+    @ViewChild('optionMenu') public optionMenu: ContextMenuComponent;
 
-  constructor(private tlogService: TimelogService) { }
+    constructor(private tlogService: TimelogService) {
+    }
 
   ngOnInit(): void {
       this.updateProperties();
@@ -53,25 +52,20 @@ export class TimelinebarComponent implements OnInit, OnDestroy {
     this.left = '' + this.tlogService.getBarLeftPosition(this.myTlog) + 'px';
     this.width = '' + this.tlogService.getBarWidth(this.myTlog) + 'px';
     this.details = this.tlogService.getDetails(this.myTlog);
-    console.log('tlbar updateProps', this.idx, this.myTlog, this.left, this.width, this.details);
   }
-
 
   onDelete(event: any): void {
-     console.log('Delete: ', event, this.myTlog);
-     this.tlogService.delete(this.miDlogIdx, this.idx);
+     this.tlogService.deleteLog(this.miDlogIdx, this.idx);
   }
+
   onResizeStart(event: ResizeEvent): void {
-    console.log('ResizeStart', event);
     this.isResizing = true;
   }
 
   onResizeEnd(event: ResizeEvent): void {
-    console.log('ResizeEnd', event);
     this.isResizing = false;
     this.myTlog = this.tlogService.onResize(event.edges, this.myTlog);
-    console.log('After resize', this.myTlog);
-    this.tlogService.updateTimelog(this.myTlog, this.miDlogIdx, this.idx);
+    this.tlogService.updateTimelog(this.myTlog, this.miDlogIdx);
   }
 
   onValidateResize(): boolean {

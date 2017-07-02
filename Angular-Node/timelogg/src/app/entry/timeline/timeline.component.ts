@@ -1,8 +1,5 @@
 import {Component, OnInit, Input} from '@angular/core';
 import { IDaylog } from '../../../models';
-import { TimelogService } from '../../shared/services/timelog.service';
-import { TimelinebarComponent } from './timelinebar.component';
-import {UtilService} from '../../shared/services/util.service';
 
 const styles: string = require('./timeline.component.css').toString();
 
@@ -20,10 +17,7 @@ export class TimelineComponent implements OnInit {
    @Input()
       myDaylog: IDaylog;
 
-    mouseOver: number = -1;
-
-  constructor(private tlogService: TimelogService, private utilService: UtilService ) {
-      console.log('Timeline constructor', this.myDaylog);
+  constructor() {
   }
 
   ngOnInit(): void {

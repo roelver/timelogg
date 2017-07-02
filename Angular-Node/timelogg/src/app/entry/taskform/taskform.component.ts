@@ -1,11 +1,11 @@
-import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
+import {Component, OnInit, EventEmitter, Output, Input} from '@angular/core';
 
-const styles: string  = require('./taskform.component.css').toString();
+const styles: string = require('./taskform.component.css').toString();
 
 @Component({
-  selector: 'div[tl-taskform]',
-  templateUrl: 'taskform.component.html',
-  styles: [styles]
+    selector: 'div[tl-taskform]',
+    templateUrl: 'taskform.component.html',
+    styles: [styles]
 })
 export class TaskformComponent implements OnInit {
 
@@ -18,17 +18,17 @@ export class TaskformComponent implements OnInit {
     @Output()
     saveTask: EventEmitter<string> = new EventEmitter<string>();
 
-  constructor() {}
+    constructor() {
+    }
 
-  ngOnInit(): void {
-      console.log('Edit task', this.myDesc);
-  }
+    ngOnInit(): void {
+    }
 
-  delete(): void {
-     this.deleteTask.emit(true);
-  }
+    deleteTsk(): void {
+        this.deleteTask.emit(true);
+    }
 
-  save(): void {
-     this.saveTask.emit(this.myDesc);
-  }
+    saveTsk(): void {
+        this.saveTask.emit(this.myDesc);
+    }
 }
