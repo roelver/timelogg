@@ -77,7 +77,15 @@ export class TimelogService {
                     for (let i = 0; i < this.daylogs.length; i++) {
                         this.daylogs[i].dirtyCode = null;
                         if (this.daylogs[i].isRunning) {
-                            this.currentDlogRunning = i;
+                            if (this.currentDate !== this.getToday()) {
+                                this.currentDlogRunning = -1;
+                                this.daylogs[i].isRunning = false;
+                                this.daylogs[i].dirtyCode = 'U';
+                                this.daylogs[i].logs[this.daylogs[i].logs.length - 1].endTime =
+                                    this.utilService.getTimeMsec('23:59:59');
+                            } else {
+                                this.currentDlogRunning = i;
+                            }
                         }
                     }
                     this.daylogChanged.next();
@@ -100,10 +108,14 @@ export class TimelogService {
     }
 
     deleteTask(idx: number): void {
-        this.daylogs[idx].dirtyCode = 'D';
         if (this.currentDlogRunning === idx) {
             this.currentDlogRunning = -1;
         }
+        if (this.daylogs[idx].dirtyCode === 'A') {
+            this.daylogs.splice(idx, 1);
+            return;
+        }
+        this.daylogs[idx].dirtyCode = 'D';
         this.saveDlogs();
     }
 
@@ -241,6 +253,7 @@ export class TimelogService {
                     }
                 }
                 this.sortDaylogs();
+                this.saveDlogs();
                 return 'x';
             });
     }
