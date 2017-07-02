@@ -1,16 +1,16 @@
 import {Component, OnInit, Input, ViewChild, OnDestroy} from '@angular/core';
-import { IDaylog, ITimelog } from '../../../models';
-import { TimelogService } from '../../shared/services/timelog.service';
-import { ResizeEvent } from 'angular-resizable-element';
-import { ContextMenuComponent } from 'ngx-contextmenu';
+import {IDaylog, ITimelog} from '../../../models';
+import {TimelogService} from '../../shared/services/timelog.service';
+import {ResizeEvent} from 'angular-resizable-element';
+import {ContextMenuComponent} from 'ngx-contextmenu';
 import {Subscription} from 'rxjs/Subscription';
 
 const styles: string = require('./timelinebar.component.css').toString();
 
 @Component({
-  selector: 'tl-timelinebar',
-  templateUrl: 'timelinebar.component.html',
-  styles: [styles]
+    selector: 'tl-timelinebar',
+    templateUrl: 'timelinebar.component.html',
+    styles: [styles]
 })
 export class TimelinebarComponent implements OnInit, OnDestroy {
 
@@ -38,42 +38,43 @@ export class TimelinebarComponent implements OnInit, OnDestroy {
     constructor(private tlogService: TimelogService) {
     }
 
-  ngOnInit(): void {
-      this.updateProperties();
-      this.updateSubscription = this.tlogService.updateTimelines.subscribe(() => this.updateProperties());
-  }
+    ngOnInit(): void {
+        this.updateProperties();
+        this.updateSubscription = this.tlogService.updateTimelines.subscribe(() => this.updateProperties());
+    }
 
-  ngOnDestroy(): void {
-      if (this.updateSubscription) {
-          this.updateSubscription.unsubscribe();
-      }
-  }
-  updateProperties(): void {
-    this.left = '' + this.tlogService.getBarLeftPosition(this.myTlog) + 'px';
-    this.width = '' + this.tlogService.getBarWidth(this.myTlog) + 'px';
-    this.details = this.tlogService.getDetails(this.myTlog);
-  }
+    ngOnDestroy(): void {
+        if (this.updateSubscription) {
+            this.updateSubscription.unsubscribe();
+        }
+    }
 
-  onDelete(event: any): void {
-     this.tlogService.deleteLog(this.miDlogIdx, this.idx);
-  }
+    updateProperties(): void {
+        this.left = '' + this.tlogService.getBarLeftPosition(this.myTlog) + 'px';
+        this.width = '' + this.tlogService.getBarWidth(this.myTlog) + 'px';
+        this.details = this.tlogService.getDetails(this.myTlog);
+    }
 
-  onResizeStart(event: ResizeEvent): void {
-    this.isResizing = true;
-  }
+    onDelete(event: any): void {
+        this.tlogService.deleteLog(this.miDlogIdx, this.idx);
+    }
 
-  onResizeEnd(event: ResizeEvent): void {
-    this.isResizing = false;
-    this.myTlog = this.tlogService.onResize(event.edges, this.myTlog);
-    this.tlogService.updateTimelog(this.myTlog, this.miDlogIdx);
-  }
+    onResizeStart(event: ResizeEvent): void {
+        this.isResizing = true;
+    }
 
-  onValidateResize(): boolean {
-    return true;
-  }
+    onResizeEnd(event: ResizeEvent): void {
+        this.isResizing = false;
+        this.myTlog = this.tlogService.onResize(event.edges, this.myTlog);
+        this.tlogService.updateTimelog(this.myTlog, this.miDlogIdx);
+    }
 
-  markDirty(): void {
-      this.tlogService.markDirty(this.miDlogIdx);
-  }
+    onValidateResize(): boolean {
+        return true;
+    }
+
+    markDirty(): void {
+        this.tlogService.markDirty(this.miDlogIdx);
+    }
 
 }

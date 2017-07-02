@@ -141,6 +141,7 @@ export class TimelogService {
                 });
             }
             if (this.daylogs[i].dirtyCode === 'U') {
+                console.log('>>saveDlogs U', i , this.daylogs[i]);
                 this.updateDaylog(this.daylogs[i], i).subscribe((idx) => this.daylogs[idx].dirtyCode = null);
             }
             if (this.daylogs[i].dirtyCode === 'D') {
