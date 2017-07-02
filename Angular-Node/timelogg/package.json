@@ -19,8 +19,7 @@
     "start": "node ./target/assets/js/server.js",
     "lint": "tslint -c tslint.json ./src/**/*.ts",
     "test": "./node_modules/.bin/karma start --single-run",
-    "postinstall": "npm run build",
-    "heroku-postbuild": "./node_modules/.bin/webpack -p --config ./config/webpack.prod.js --progress"
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "@angular/common": "^4.0.0",
