@@ -66,6 +66,7 @@ export class TimelinebarComponent implements OnInit, OnDestroy {
     onResizeEnd(event: ResizeEvent): void {
         this.isResizing = false;
         this.myTlog = this.tlogService.onResize(event.edges, this.myTlog);
+        this.tlogService.markDirty(this.miDlogIdx);
         this.tlogService.updateTimelog(this.myTlog, this.miDlogIdx);
     }
 

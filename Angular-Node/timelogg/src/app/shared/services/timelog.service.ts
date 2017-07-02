@@ -141,7 +141,6 @@ export class TimelogService {
                 });
             }
             if (this.daylogs[i].dirtyCode === 'U') {
-                console.log('>>saveDlogs U', i , this.daylogs[i]);
                 this.updateDaylog(this.daylogs[i], i).subscribe((idx) => this.daylogs[idx].dirtyCode = null);
             }
             if (this.daylogs[i].dirtyCode === 'D') {
@@ -236,6 +235,7 @@ export class TimelogService {
 
     updateTimelog(log: ITimelog, dlogIdx: number): void {
         this.adjustOverlap(log, this.daylogs[dlogIdx].description);
+        this.saveDlogs();
         this.daylogChanged.next();
         this.updateTimelines.next();
     }
