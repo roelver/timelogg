@@ -1,0 +1,9 @@
+<td class="line">
+	<tl-timelinebar
+	   *ngFor="let log of myDaylog?.logs; let i = index"
+		[idx]="i"
+		[miDlogIdx]="idx"
+	    [updateFlag]="myDaylog?.updateFlag"
+		[myTlog]="log"
+	   ></tl-timelinebar>
+</td>

@@ -1,0 +1,67 @@
+<div class="entrypage">
+  <div class="row">
+    <div class="col-md-offset-8 col-md-4 right">
+      <input type="date" [value]="dt" (change)="onDateChange($event.target.value)"/>
+    </div> <!-- .col-md4 -->
+  </div> <!-- .row -->
+      <tl-logform [dt]="dt" #modal>
+        <div class="app-modal-header">
+          Manual Time Log Entry Form
+        </div>
+        <div class="app-modal-body">
+          <div id="manual">
+            <form id="entryform" (ngSubmit)="modal.onSubmit(f)" #f="ngForm">
+              <div class="form-group">
+              <label for="select-task">Task</label>
+              <select class="form-control" required ngModel name="taskDesc" id="select-task" name="taskDesc">
+                <option *ngFor="let task of tasklist" [value]="task">
+                  {{task}}
+                </option>
+              </select>
+              </div>
+              <div class="form-group">
+                <label for="fromHH">From</label>
+                <select id="fromHH" ngModel name="fromHH" required>
+                  <option *ngFor="let i of hours" [value]="i">{{i}}</option>
+                </select>
+                <span>:</span>
+                <select id="fromMM" ngModel name="fromMM" required>
+                  <option *ngFor="let i of mins" [value]="i">{{i}}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="toHH">Until</label>
+                <select id="toHH" ngModel name="toHH" required>
+                  <option *ngFor="let i of hours" [value]="i">{{i}}</option>
+                </select>
+                <span>:</span>
+                <select id="toMM" ngModel name="toMM" required>
+                  <option *ngFor="let i of mins" [value]="i">{{i}}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="comment">Comment</label>
+                <input id="comment" type="text" ngModel name="comment" placeholder="Comment" size="20"/>
+              </div>
+            </form>
+          </div> <!-- #manual -->
+
+        </div>
+        <div class="app-modal-footer">
+            <button type="button" class="btn btn-default" (click)="modal.hide()">Close</button>
+            <button type="submit" class="btn btn-default" [disabled]="!f.valid" form="entryform">Save</button>
+        </div>
+      </tl-logform>
+<div class="entries">
+  <tl-timeline-area [userid]="currentUser?.email" [currentDate]="currentDate" (taskListChanged)="0"></tl-timeline-area>
+
+  <p class="controls">
+    <span class="control" (click)="onNewTask()"><img src="assets/images/add.png" alt="Add a new task"/></span>
+      <button class="btn btn-default" (click)="onCopyRecent()">Copy recent tasks</button>
+      <button class="btn btn-default" (click)="modal.show()">Enter Manual Time</button>
+      <button class="btn btn-default" (click)="redrawAll()">Refresh Page</button>
+  </p>
+
+</div> <!-- .entries -->
+
+</div> <!-- .entrypage -->
