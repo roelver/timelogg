@@ -13,7 +13,7 @@ import {IUser} from '../../../models/user';
 
 const msDay = 24 * 60 * 60 * 1000;
 const monthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-const copyLastDays = 4;
+const copyLastDays = -6;
 
 @Injectable()
 export class TimelogService {
@@ -194,10 +194,11 @@ export class TimelogService {
 
     setCurrentDate(dt: string): void { // format YYYYMMDD
         this.currentDate = dt;
-        this.dateChanged.emit(this.currentDate);
+        console.log('Set date to:', dt);
         this.retrieveDaylogs().subscribe((daylogs) => {
             this.daylogs = daylogs;
             this.daylogChanged.next();
+            this.dateChanged.emit(this.currentDate);
         });
     }
 
@@ -241,7 +242,7 @@ export class TimelogService {
     }
 
     copyPreviousDays(): Observable<any> {
-        return this.http.get('/rest/task/' + this.daysBack(), {headers: this.headers})
+        return this.http.get('/rest/task/' + this.addDays(copyLastDays), {headers: this.headers})
             .map((resp: Response) => {
                 const tasks: string[] = resp.json().tasks;
                 for (let i = 0; i < tasks.length; i++) {
@@ -259,12 +260,11 @@ export class TimelogService {
             });
     }
 
-    daysBack(): string {
-        if (!(copyLastDays > 0)) return this.currentDate;
-        const today = this.getToday();
+    addDays(increment: number): string {
+        const today = this.currentDate;
         let year = parseInt(today.substr(0, 4), 10);
         let month = parseInt(today.substr(4, 2), 10) - 1;
-        let day = parseInt(today.substr(6, 2), 10) - copyLastDays;
+        let day = parseInt(today.substr(6, 2), 10) + increment;
         if (day < 1) {
             month = month - 1;
             if (month < 0) {
@@ -272,8 +272,17 @@ export class TimelogService {
                 year--;
             }
             day = day + monthDays[month];
+        } else {
+            if (day > monthDays[month]) {
+                day = day - monthDays[month];
+                month++;
+                if (month > 11) {
+                    month = 0;
+                    year++;
+                }
+            }
         }
-        return '' + year + this.utilService.pad(month + 1) + this.utilService.pad(day + 1);
+        return '' + year + this.utilService.pad(month + 1) + this.utilService.pad(day);
     }
 
     startRunning(dlogIdx: number): void {

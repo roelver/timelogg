@@ -64,7 +64,7 @@ export class UtilService {
     }
 
     pad(x: number): string {
-        if (x < 9) {
+        if (x <= 9) {
             return '0' + x;
         }
         return '' + x;

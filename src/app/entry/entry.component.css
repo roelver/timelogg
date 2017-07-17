@@ -174,3 +174,6 @@ table.tmp td {
     border-bottom: 1px solid #666;
     border-right: 1px solid #666;
 }
+.changeDate:hover {
+    cursor: pointer
+}

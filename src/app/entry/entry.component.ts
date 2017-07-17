@@ -16,7 +16,7 @@ const styles: string = require('./entry.component.css').toString();
 export class EntryComponent implements OnInit, OnDestroy {
 
     @Input()
-    dt: string;
+    dt: string;  // format yyyy-mm-dd
 
     currentDate: string; // dt in fmt YYYYMMDD
 
@@ -78,6 +78,21 @@ export class EntryComponent implements OnInit, OnDestroy {
 
     redrawAll(): void {
         this.tlogService.markUpdatedAll();
+    }
+
+    nextDay(): void {
+        this.addDays(1);
+    }
+
+    previousDay(): void {
+        this.addDays(-1);
+    }
+
+    addDays(increment: number): void {
+        const newDate = this.tlogService.addDays(increment);
+        const newDt = newDate.substring(0, 4) + '-' + newDate.substring(4, 6) + '-' + newDate.substring(6, 8);
+        console.log(newDt);
+        this.onDateChange(newDt);
     }
 
 }

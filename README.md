@@ -1,3 +1,16 @@
+## Timelogg
+
+A simple time logger, made in Angular 4.
+Features:
+* Add tasks per day
+* Record time logs in realtime
+* Add logs manually 
+* Get a summary
+* Copy tasks from previous days
+* Scroll through the past few days.
+
+Go to the [DEMO](https://timelogg.herokuapp.com) for this app is available on Heroku.
+
 
 ## Heroku
 

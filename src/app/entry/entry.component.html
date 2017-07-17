@@ -1,7 +1,9 @@
 <div class="entrypage">
   <div class="row">
     <div class="col-md-offset-8 col-md-4 right">
-      <input type="date" [value]="dt" (change)="onDateChange($event.target.value)"/>
+      <img src="assets/images/arrow-left.png" (click)="previousDay()" class="changeDate" />
+      <input id="displayDate" type="date" [value]="dt" (change)="onDateChange($event.target.value)"/>
+      <img src="assets/images/arrow-right.png" (click)="nextDay()" class="changeDate" />
     </div> <!-- .col-md4 -->
   </div> <!-- .row -->
       <tl-logform [dt]="dt" #modal>
