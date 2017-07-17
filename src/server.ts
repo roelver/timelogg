@@ -1,2 +1,2 @@
 // Instantiate server app
-let app = require('./server/app');
+let app2 = require('./server/app');
