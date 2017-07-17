@@ -316,9 +316,12 @@ export class TimelogService {
     adjustOverlap(log: ITimelog, taskDesc: string): void {
         const now = this.utilService.getLocalTime();
         let switchRun = false;
-        if (log.endTime > now) {
+        if (log.endTime > now && this.getToday() === this.currentDate) {
             log.endTime = now;
             switchRun = true;
+        }
+        if (log.startTime > log.endTime) {
+            log.endTime = log.startTime + 1000;
         }
         this.daylogs.map((dl, dlidx) => {
             const sameTask = dl.description === taskDesc;
