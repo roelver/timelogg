@@ -1,0 +1,13 @@
+input.ng-invalid.ng-touched,
+textarea.ng-invalid.ng-touched {
+	border: 1px solid #f55;
+	background-color: #fff8f8;
+}
+span.err-message {
+   color: red;
+	padding: 5px;
+	margin: 3px 0;
+	background-color: rgba(66, 33, 33, 0.5);
+	border-radius: 4px;
+   font-size: 1.1em;
+}
