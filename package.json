@@ -1,12 +1,12 @@
 {
   "name": "timelogg",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A time logger made with - MongoDB + ExpressJS + Angular 2 + NodeJS",
-  "homepage": "https://github.com/jussikinnula/angular2-mean-starter",
-  "repository": "https://github.com/jussikinnula/angular2-mean-starter",
+  "homepage": "https://github.com/roelver/timelogg",
+  "repository": "https://github.com/roelver/timelogg",
   "author": {
-    "name": "Jussi Kinnula",
-    "email": "jussi.kinnula@gmail.com"
+    "name": "Roel Verbunt",
+    "email": "roel@romaniflo.nl"
   },
   "license": "MIT",
   "engines": {

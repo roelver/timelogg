@@ -25,3 +25,6 @@ table.summary {
 input {
     color: #333333;
 }
+.changeDate:hover {
+    cursor: pointer
+}

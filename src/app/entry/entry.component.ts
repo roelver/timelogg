@@ -91,7 +91,6 @@ export class EntryComponent implements OnInit, OnDestroy {
     addDays(increment: number): void {
         const newDate = this.tlogService.addDays(increment);
         const newDt = newDate.substring(0, 4) + '-' + newDate.substring(4, 6) + '-' + newDate.substring(6, 8);
-        console.log(newDt);
         this.onDateChange(newDt);
     }
 

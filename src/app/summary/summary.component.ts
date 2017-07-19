@@ -88,4 +88,18 @@ export class SummaryComponent implements OnInit, OnDestroy {
         }
     }
 
+    nextDay(): void {
+        this.addDays(1);
+    }
+
+    previousDay(): void {
+        this.addDays(-1);
+    }
+
+    addDays(increment: number): void {
+        const newDate = this.tlogService.addDays(increment);
+        const newDt = newDate.substring(0, 4) + '-' + newDate.substring(4, 6) + '-' + newDate.substring(6, 8);
+        this.onDateChange(newDt);
+    }
+
 }
