@@ -59,6 +59,9 @@ export class SummaryComponent implements OnInit, OnDestroy {
         }
         return this.tlogService.getParticlesStr(sum);
     }
+    deleteTlog(dlogId: number, tlogId: number) {
+        this.tlogService.deleteLog(dlogId, tlogId);
+    }
 
     totalDuration(): string {
         let sum = 0;

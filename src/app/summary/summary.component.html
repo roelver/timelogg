@@ -19,7 +19,8 @@
             <tr *ngFor="let tlog of dlog.logs; let j = index">
                 <td [rowSpan]="dlog.logs?.length || 1" *ngIf="j === 0" class="taskname">{{dlog.description}}</td>
                 <td class="details">
-                    {{getStartStr(tlog)}} - {{getEndStr(tlog)}} ({{getDurationStr(tlog)}}): {{tlog.comment}}
+                    <span class="pull-right del-button" (click)="deleteTlog(i,j)">&times;</span>
+                    <span>{{getStartStr(tlog)}} - {{getEndStr(tlog)}} ({{getDurationStr(tlog)}}): {{tlog.comment}}</span>
                 </td>
                 <td [rowSpan]="dlog.logs?.length || 1" *ngIf="j === 0" class="duration">{{ taskDuration(i) }}</td>
             </tr>
